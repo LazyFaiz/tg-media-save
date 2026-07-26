@@ -4,7 +4,7 @@ All notable changes to **TG Media Saver** are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.0.1] - 2026-07-26
 
 ### Added
 

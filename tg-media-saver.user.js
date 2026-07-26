@@ -2,7 +2,7 @@
 // @name         TG Media Saver
 // @name:ru      TG Media Saver — сохранение медиа из Telegram Web
 // @namespace    https://github.com/eiler2005/tg-media-saver
-// @version      1.0.0
+// @version      1.0.1
 // @description  Save photos, videos, GIFs and voice messages from Telegram Web — including channels with "restrict saving content" enabled.
 // @description:ru  Сохраняйте фото, видео, GIF и голосовые из Telegram Web — в том числе из каналов с запретом сохранения контента.
 // @author       Denis Ermilov
@@ -146,45 +146,56 @@
     let total = null;
     let mime = (meta && meta.mime) || "video/mp4";
 
-    for (;;) {
-      const res = await page.fetch(url, { headers: { Range: `bytes=${offset}-` } });
-      if (res.status !== 200 && res.status !== 206) throw new Error(`HTTP ${res.status}`);
-      mime = (res.headers.get("Content-Type") || mime).split(";")[0];
+    try {
+      for (;;) {
+        const res = await page.fetch(url, { headers: { Range: `bytes=${offset}-` } });
+        if (res.status !== 200 && res.status !== 206) throw new Error(`HTTP ${res.status}`);
+        mime = (res.headers.get("Content-Type") || mime).split(";")[0];
 
-      const range = res.headers.get("Content-Range");
-      const chunk = await res.blob();
+        const range = res.headers.get("Content-Range");
+        const chunk = await res.blob();
 
-      if (!range) {
-        // Server ignored Range and sent the whole file at once.
-        const finalName = withExt(name, mime);
-        if (writable) {
-          await writable.write(chunk);
-          await writable.close();
-        } else {
-          saveBlob(chunk, finalName);
+        if (!range) {
+          // Server ignored Range and sent the whole file at once.
+          const finalName = withExt(name, mime);
+          if (writable) {
+            await writable.write(chunk);
+            await writable.close();
+            writable = null;
+          } else {
+            saveBlob(chunk, finalName);
+          }
+          if (onProgress) onProgress(1);
+          return finalName;
         }
-        if (onProgress) onProgress(1);
-        return finalName;
+
+        const m = /bytes (\d+)-(\d+)\/(\d+)/.exec(range);
+        if (!m) throw new Error(`Malformed Content-Range header: ${range}`);
+        const end = Number(m[2]);
+        total = Number(m[3]);
+
+        if (end + 1 <= offset) throw new Error("Download stalled: server did not advance the offset");
+
+        if (writable) await writable.write(chunk);
+        else parts.push(chunk);
+
+        offset = end + 1;
+        if (onProgress && total) onProgress(offset / total);
+        if (offset >= total) break;
       }
 
-      const m = /bytes (\d+)-(\d+)\/(\d+)/.exec(range);
-      const end = Number(m[2]);
-      total = Number(m[3]);
-
-      if (writable) await writable.write(chunk);
-      else parts.push(chunk);
-
-      offset = end + 1;
-      if (onProgress && total) onProgress(offset / total);
-      if (offset >= total) break;
+      if (writable) {
+        await writable.close();
+        writable = null;
+      } else {
+        saveBlob(new page.Blob(parts, { type: mime }), withExt(name, mime));
+      }
+      return withExt(name, mime);
+    } catch (err) {
+      // Release a partially written file so it is not left locked on disk.
+      if (writable) await writable.abort().catch(() => {});
+      throw err;
     }
-
-    if (writable) {
-      await writable.close();
-    } else {
-      saveBlob(new page.Blob(parts, { type: mime }), withExt(name, mime));
-    }
-    return withExt(name, mime);
   };
 
   // ---------- capture ----------

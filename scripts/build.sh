@@ -15,6 +15,14 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
+# Preflight: fail fast with a clear message if a required tool is missing.
+for cmd in python3 zip; do
+  command -v "$cmd" >/dev/null 2>&1 || {
+    echo "error: '$cmd' is required but not installed." >&2
+    exit 1
+  }
+done
+
 VERSION="$(python3 -c "import json;print(json.load(open('extension/manifest.json'))['version'])")"
 echo "Building TG Media Saver v${VERSION}"
 

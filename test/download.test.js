@@ -121,3 +121,74 @@ test("download: surfaces non-2xx responses as errors", async () => {
   const url = streamUrl({ fileName: "x.mp4", size: 1, mimeType: "video/mp4" });
   await assert.rejects(() => download(url), /HTTP 403/);
 });
+
+// ---------- File System Access (stream to disk via a writable) ----------
+function setupWritable() {
+  const writes = [];
+  const state = { closed: false, aborted: false, suggestedName: null };
+  const writable = {
+    write: async (blob) => {
+      writes.push(blob);
+    },
+    close: async () => {
+      state.closed = true;
+    },
+    abort: async () => {
+      state.aborted = true;
+    },
+  };
+  // Must run AFTER setupPage() (which deletes showSaveFilePicker).
+  win.showSaveFilePicker = async (opts) => {
+    state.suggestedName = opts && opts.suggestedName;
+    return { createWritable: async () => writable };
+  };
+  return { writes, state };
+}
+
+test("download: streams Range chunks to disk via the File System Access API", async () => {
+  setupPage({
+    fetchImpl: async (url, opts) => {
+      const start = Number(opts.headers.Range.replace("bytes=", "").replace("-", ""));
+      if (start === 0) {
+        return res(206, { "content-type": "video/mp4", "content-range": "bytes 0-49/100" }, "a".repeat(50));
+      }
+      if (start === 50) {
+        return res(206, { "content-type": "video/mp4", "content-range": "bytes 50-99/100" }, "b".repeat(50));
+      }
+      throw new Error("unexpected range " + opts.headers.Range);
+    },
+  });
+  const { writes, state } = setupWritable();
+
+  const progress = [];
+  const url = streamUrl({ fileName: "movie.mp4", size: 100, mimeType: "video/mp4" });
+  const name = await download(url, (p) => progress.push(p));
+
+  assert.equal(name, "movie.mp4");
+  assert.equal(state.suggestedName, "movie.mp4");
+  assert.equal(writes.length, 2, "both chunks written to the writable");
+  assert.equal(state.closed, true, "writable closed on success");
+  assert.equal(state.aborted, false, "not aborted on success");
+  assert.deepEqual(progress, [0.5, 1]);
+  assert.equal(lastAnchor(), undefined, "no anchor download in the writable path");
+});
+
+test("download: aborts the writable when a chunk fetch fails", async () => {
+  setupPage({
+    fetchImpl: async (url, opts) => {
+      const start = Number(opts.headers.Range.replace("bytes=", "").replace("-", ""));
+      if (start === 0) {
+        return res(206, { "content-type": "video/mp4", "content-range": "bytes 0-49/100" }, "a".repeat(50));
+      }
+      return res(500, { "content-type": "video/mp4" }, ""); // second chunk fails
+    },
+  });
+  const { writes, state } = setupWritable();
+
+  const url = streamUrl({ fileName: "movie.mp4", size: 100, mimeType: "video/mp4" });
+  await assert.rejects(() => download(url), /HTTP 500/);
+
+  assert.equal(writes.length, 1, "first chunk written before the failure");
+  assert.equal(state.aborted, true, "writable aborted on error");
+  assert.equal(state.closed, false, "writable not closed on error");
+});
