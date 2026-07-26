@@ -134,16 +134,28 @@ uv run --with pillow python scripts/make_icons.py
 npm test
 ```
 
-Покрытие:
+### Что, где и как проверяется
 
-- `test/unit.test.js` — чистые хелперы (`describeStream`, `humanSize`, `extFromMime`, `withExt`).
-- `test/download.test.js` — ядро (движок скачивания) с мокнутым `page.fetch`: Range-чанки +
-  склейка blob, фолбэк «сервер игнорирует Range», ветка `blob:`/`data:`, проброс ошибок.
-- `test/content.test.js` — грузит реальный `src/content.js` под DOM-шимом и проверяет, что
-  boot выставляет консольное API `tgSaver`.
-- `test/build.test.js` — запускает `scripts/build.sh` и проверяет все артефакты (шапка userscript
-  + подставленная версия, синхронность `extension/content.js`, поля MV3-манифеста, наличие
-  иконок, отсутствие inline-скрипта в popup).
+| Файл | Что проверяет | Как |
+|---|---|---|
+| `test/unit.test.js` | Чистые хелперы: `describeStream` (парсинг `/stream/` JSON-дескриптора, декодирование unicode-имён, `null` для не-stream ссылок), `humanSize` (формат B/KB/MB/GB), `extFromMime` (известные/неизвестные/пустые), `withExt` (добавить vs. сохранить расширение) | Прямые вызовы функций + `node:assert` |
+| `test/download.test.js` | Ядро — движок `download()`: HTTP `Range`-чанки + склейка blob, фолбэк «сервер игнорирует `Range`» (файл целиком), ветка `blob:`/`data:` (один запрос), проброс ошибок (non-2xx) | Мокает контекст страницы (`page.fetch`, `page.Blob`, `page.URL`) и записывающий `document.createElement`; проверяет последовательность fetch (`bytes=0-`, `bytes=50-`, …), колбэки прогресса и итоговый `href`/`download` у `<a>` |
+| `test/content.test.js` | Путь boot выставляет консольное API `tgSaver` (`status` / `downloadLast` / `debug`) и его начальное состояние — без браузера | Грузит **реальный** `src/content.js` под DOM-шимом (`document.body = null` ⇒ `boot()` пропускается, без таймеров/DOM) |
+| `test/build.test.js` | Конвейер упаковки: `scripts/build.sh` проходит; у userscript валидная шапка с подставленной версией манифеста (без остаточного `__VERSION__`); `extension/content.js` побайтово равен `src/content.js`; манифест MV3 / `world: MAIN` / `document_start` и ссылается на существующие файлы; иконки есть и не пустые; в popup нет inline-`<script>` | Запускает `scripts/build.sh`, затем читает и валидирует каждый артефакт |
+
+### Как имитируется браузер
+
+`test/helpers.js` ставит минимальный шим `window`/`document`, чтобы реальный контент-скрипт
+можно было `require` в Node. Тесты движка скачивания затем подменяют `page.fetch`/`page.Blob`/
+`page.URL` заглушками и перехватывают элемент `<a>`, который создаёт `saveBlob()` — так весь
+конвейер прогоняется **без сети и без браузера**.
+
+### Что намеренно НЕ покрывается
+
+Реальное воспроизведение в Telegram и поведение Service Worker требуют залогиненного браузера,
+поэтому юнит-тестами не покрываются. Этот путь — **ручной смоук-тест** (поставить
+расширение/скрипт на `web.telegram.org`, воспроизвести видео, убедиться, что ⬇ сохраняет — см.
+[Troubleshooting](#troubleshooting)).
 
 CI прогоняет `npm test` на каждый push и pull request (GitHub Actions).
 
@@ -162,19 +174,101 @@ CI прогоняет `npm test` на каждый push и pull request (GitHub 
 - **Кнопка есть, но скачивание не стартует.** Откройте DevTools → Console → фильтр
   `TG Media Saver` и посмотрите ошибку. Убедитесь, что медиа реально воспроизводится.
 
-## Как это работает (кратко)
+## Как это работает
 
-- Telegram Web имеет строгий CSP, блокирующий инжект в мир страницы. Оба режима обходят это:
+### Архитектура (два режима — один источник)
+
+```
+                          TG Media Saver
+            ┌──────────────────────┴──────────────────────┐
+            │                                             │
+   Режим 1: Userscript                         Режим 2: Расширение Chrome
+   (Tampermonkey / Violentmonkey)              (Manifest V3)
+            │                                             │
+            │  @grant unsafeWindow                        │  content_scripts:
+            │  → работает в ISOLATED-мире                 │    world: "MAIN"
+            │    (обходит CSP страницы)                   │    run_at: document_start
+            │                                             │    (обходит CSP страницы)
+            └──────────────────────┬──────────────────────┘
+                                   │
+                                   ▼
+                ┌────────────────────────────────────────┐
+                │  src/content.js  (единая IIFE)          │
+                │  page = unsafeWindow || window          │  ← всегда окно СТРАНИЦЫ
+                └───────────────────┬────────────────────┘
+                                    │  page.fetch(...)   ← должен идти в контексте страницы
+                                    ▼
+                ┌────────────────────────────────────────┐
+                │  Service Worker Telegram (sw-*.js)      │
+                │  перехватывает  /k/stream/{json}        │
+                └───────────────────┬────────────────────┘
+                                    │  MTProto (ваша сессия)
+                                    ▼
+                ┌────────────────────────────────────────┐
+                │  CDN / DC Telegram  →  байты медиа      │
+                └────────────────────────────────────────┘
+```
+
+Ключевые моменты:
+
+- У Telegram Web строгий CSP, блокирующий инжект в мир страницы. Оба режима обходят это:
   userscript — через isolated world (`@grant unsafeWindow`), расширение — через браузерный
   MAIN-world content script.
 - `/k/` отдаёт медиа через свой **Service Worker** по адресу `/k/stream/<urlencoded JSON>`.
   Этот JSON-дескриптор содержит настоящие `fileName`, `size`, `mimeType`, `dcId`.
 - Чтобы получить байты, `fetch` должен выполняться **в контексте страницы** (тогда его
   перехватывает Service Worker). Поэтому все сетевые вызовы идут через `page.fetch`
-  (`unsafeWindow.fetch` / `window.fetch`).
-- Ссылки на медиа находятся опросом `currentSrc` у `<video>`/`<audio>` (DOM общий для обоих миров).
-- Скачивание — HTTP `Range`-запросами по кускам, затем стриминг на диск (File System Access)
-  или склейка в Blob.
+  (`unsafeWindow.fetch` / `window.fetch`), а не через «голый» `fetch` контент-скрипта.
+
+### Поток: захват ссылки + скачивание
+
+```
+   каждые 600 мс
+   ┌───────────────────────────────────────────────────────────────┐
+   │ capture():  опрос <video>/<audio>.currentSrc                  │
+   │   новая ссылка? → в state.last + парсинг /stream/ {json}      │
+   │ decorate(): ⬇ на медиа в ленте + плавающая ⬇ (слева внизу)    │
+   └───────────────────────────────┬───────────────────────────────┘
+                                   │ пользователь жмёт ⬇
+                                   ▼
+   ┌───────────────────────────────────────────────────────────────┐
+   │ download(url, onProgress)                                      │
+   │                                                                │
+   │   blob: / data:  ───────────► один fetch ─► saveBlob()         │
+   │                                                                │
+   │   иначе:                                                       │
+   │     есть showSaveFilePicker?                                   │
+   │        ├─ да → писать каждый Range-кусок сразу на диск         │
+   │        └─ нет → цикл:                                          │
+   │              fetch  Range: bytes=N-                            │
+   │                ├─ 206 + Content-Range → собрать кусок          │
+   │                │     offset = end+1 ; onProgress(offset/total) │
+   │                └─ нет Content-Range  → сохранить целиком       │
+   │              пока offset ≥ total                               │
+   │              → new Blob(куски) → saveBlob() (клик по <a>)      │
+   └───────────────────────────────────────────────────────────────┘
+```
+
+### Конвейер сборки
+
+```
+   src/content.js   (единый источник истины)
+        │
+        │   scripts/build.sh    (версия берётся из extension/manifest.json)
+        ├──────────────────────────────────────┐
+        ▼                                      ▼
+   src/userscript.meta.js                   (копия)
+   + src/content.js                            │
+        │                                      ▼
+        ▼                            extension/content.js
+   tg-media-saver.user.js                      +  manifest.json
+   → установка в Tampermonkey                  +  popup.html/.css + icons/
+        │                                      │
+        │                                      ▼  zip
+        │                            dist/tg-media-saver-extension.zip
+        │                            → load unpacked / раздача
+        └─ версия подставляется из манифеста (__VERSION__ заменяется)
+```
 
 Подробности для разработчиков и AI-агентов — в [`AGENTS.md`](./AGENTS.md).
 
@@ -222,5 +316,4 @@ PR приветствуются: правьте [`src/content.js`](./src/content
 
 ## Лицензия
 
-[MIT](./LICENSE) © Denis Ermilov. Независимая реализация; не является производной какого-либо
-существующего скрипта.
+[MIT](./LICENSE)

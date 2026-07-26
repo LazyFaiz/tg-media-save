@@ -24,6 +24,24 @@ It ships in **two distribution modes from a single source of truth**:
 
 ## Architecture (the parts that are easy to get wrong)
 
+```
+  Userscript (@grant unsafeWindow,        Chrome extension (content_scripts:
+  isolated world)                          world: "MAIN", run_at: document_start)
+            │                                          │
+            └───────────────────┬──────────────────────┘
+                                ▼
+              src/content.js  (single IIFE)
+              page = unsafeWindow || window   ← always the PAGE window
+                                │
+                  page.fetch / page.Blob / page.URL / page.showSaveFilePicker
+                                │  (must run in page context)
+                                ▼
+              Telegram Service Worker  →  /k/stream/{json descriptor}
+                                │  MTProto (user session)
+                                ▼
+              Telegram CDN / DC  →  media bytes
+```
+
 - **CSP bypass.** `web.telegram.org` has a strict CSP that blocks page-world script injection.
   - Userscript: runs in the **isolated world** via `@grant unsafeWindow`.
   - Extension: runs as a **MAIN-world** content script (`manifest.json` → `"world": "MAIN"`,

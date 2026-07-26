@@ -132,17 +132,27 @@ Tests run on Node's built-in test runner — **no dependencies**:
 npm test
 ```
 
-Coverage:
+### What is tested, where, and how
 
-- `test/unit.test.js` — pure helpers (`describeStream`, `humanSize`, `extFromMime`, `withExt`).
-- `test/download.test.js` — the core download engine against a mocked `page.fetch`:
-  Range chunking + blob concatenation, the "server ignores Range" fallback, the `blob:`/`data:`
-  single-shot branch, and error propagation.
-- `test/content.test.js` — loads the real `src/content.js` under a DOM shim and verifies the
-  boot path exposes the `tgSaver` console API.
-- `test/build.test.js` — runs `scripts/build.sh` and validates every artifact (userscript header
-  + injected version, `extension/content.js` in sync with the source, MV3 manifest fields,
-  icons present, popup has no inline script).
+| File | What it verifies | How |
+|---|---|---|
+| `test/unit.test.js` | Pure helpers: `describeStream` (parses the `/stream/` JSON descriptor, decodes unicode file names, returns `null` for non-stream URLs), `humanSize` (B/KB/MB/GB formatting), `extFromMime` (known/unknown/empty), `withExt` (append vs. keep existing extension) | Direct function calls + `node:assert` |
+| `test/download.test.js` | The core `download()` engine: HTTP `Range` chunking + blob concatenation, the "server ignores `Range`" whole-file fallback, the `blob:`/`data:` single-shot branch, and non-2xx error propagation | Mocks the page context (`page.fetch`, `page.Blob`, `page.URL`) and a recording `document.createElement`; asserts the fetch call sequence (`bytes=0-`, `bytes=50-`, …), progress callbacks, and the final download anchor's `href`/`download` |
+| `test/content.test.js` | The boot path exposes the `tgSaver` console API (`status` / `downloadLast` / `debug`) and its initial state, without a browser | Loads the **real** `src/content.js` under a DOM shim (`document.body = null` ⇒ `boot()` is skipped, no timers/DOM) |
+| `test/build.test.js` | The packaging pipeline: `scripts/build.sh` succeeds; userscript has a valid header with the manifest version injected (no leftover `__VERSION__`); `extension/content.js` is byte-identical to `src/content.js`; manifest is MV3 / `world: MAIN` / `document_start` and references files that exist; icons are present and non-empty; popup has no inline `<script>` | Runs `scripts/build.sh`, then reads and validates every artifact |
+
+### How the browser is simulated
+
+`test/helpers.js` installs a minimal `window`/`document` shim so the real content script can be
+`require`d in Node. The download-engine tests then replace `page.fetch`/`page.Blob`/`page.URL`
+with fakes and capture the anchor element that `saveBlob()` creates — so the whole pipeline is
+exercised **with no network and no browser**.
+
+### What is intentionally NOT covered
+
+Real Telegram playback and the Service Worker behavior require a logged-in browser, so they are
+not unit-tested. That path is the **manual smoke test** (load the extension/userscript on
+`web.telegram.org`, play a video, confirm ⬇ saves it — see [Troubleshooting](#troubleshooting)).
 
 CI runs `npm test` on every push and pull request (GitHub Actions).
 
@@ -161,7 +171,42 @@ CI runs `npm test` on every push and pull request (GitHub Actions).
 - **Button present but download doesn't start.** Open DevTools → Console → filter
   `TG Media Saver` and read the error. Make sure the media actually plays.
 
-## How it works (brief)
+## How it works
+
+### Architecture (both modes, one source)
+
+```
+                          TG Media Saver
+            ┌──────────────────────┴──────────────────────┐
+            │                                             │
+   Mode 1: Userscript                          Mode 2: Chrome Extension
+   (Tampermonkey / Violentmonkey)              (Manifest V3)
+            │                                             │
+            │  @grant unsafeWindow                        │  content_scripts:
+            │  → runs in ISOLATED world                   │    world: "MAIN"
+            │    (bypasses page CSP)                      │    run_at: document_start
+            │                                             │    (bypasses page CSP)
+            └──────────────────────┬──────────────────────┘
+                                   │
+                                   ▼
+                ┌────────────────────────────────────────┐
+                │  src/content.js  (single IIFE)          │
+                │  page = unsafeWindow || window          │  ← always the PAGE window
+                └───────────────────┬────────────────────┘
+                                    │  page.fetch(...)   ← must run in page context
+                                    ▼
+                ┌────────────────────────────────────────┐
+                │  Telegram Service Worker (sw-*.js)      │
+                │  intercepts  /k/stream/{json descriptor}│
+                └───────────────────┬────────────────────┘
+                                    │  MTProto (your logged-in session)
+                                    ▼
+                ┌────────────────────────────────────────┐
+                │  Telegram CDN / DC  →  media bytes      │
+                └────────────────────────────────────────┘
+```
+
+Key points:
 
 - Telegram Web has a strict CSP that blocks page-world script injection. Both modes avoid it:
   the userscript runs in the isolated world (`@grant unsafeWindow`); the extension runs as a
@@ -169,12 +214,58 @@ CI runs `npm test` on every push and pull request (GitHub Actions).
 - `/k/` serves media through its own **Service Worker** at `/k/stream/<urlencoded JSON>`. That
   JSON descriptor carries the real `fileName`, `size`, `mimeType`, `dcId`.
 - To receive the bytes, the fetch must run in the **page context** (so the Service Worker
-  intercepts it). Every network call goes through `page.fetch` (`unsafeWindow.fetch` /
-  `window.fetch`).
-- Media URLs are discovered by polling `<video>`/`<audio>` `currentSrc` (the DOM is shared
-  between worlds).
-- Downloads use HTTP `Range` requests, chunked, then streamed to disk (File System Access) or
-  concatenated into a Blob.
+  intercepts it). That is why every network call goes through `page.fetch`
+  (`unsafeWindow.fetch` / `window.fetch`), never the bare content-script `fetch`.
+
+### Capture + download flow
+
+```
+   every 600 ms
+   ┌───────────────────────────────────────────────────────────────┐
+   │ capture():  scan <video>/<audio>.currentSrc                   │
+   │   new URL? → store in state.last + parse /stream/ {json}      │
+   │ decorate(): attach ⬇ to feed media + a floating ⬇ (bottom-left)│
+   └───────────────────────────────┬───────────────────────────────┘
+                                   │ user clicks ⬇
+                                   ▼
+   ┌───────────────────────────────────────────────────────────────┐
+   │ download(url, onProgress)                                      │
+   │                                                                │
+   │   blob: / data:  ───────────► single fetch ─► saveBlob()       │
+   │                                                                │
+   │   otherwise:                                                   │
+   │     showSaveFilePicker available?                              │
+   │        ├─ yes → stream each Range chunk straight to disk       │
+   │        └─ no  → loop:                                          │
+   │              fetch  Range: bytes=N-                            │
+   │                ├─ 206 + Content-Range → collect chunk          │
+   │                │     offset = end+1 ; onProgress(offset/total) │
+   │                └─ no Content-Range   → save whole response     │
+   │              until offset ≥ total                              │
+   │              → new Blob(chunks) → saveBlob() (anchor click)    │
+   └───────────────────────────────────────────────────────────────┘
+```
+
+### Build pipeline
+
+```
+   src/content.js   (single source of truth)
+        │
+        │   scripts/build.sh    (version read from extension/manifest.json)
+        ├──────────────────────────────────────┐
+        ▼                                      ▼
+   src/userscript.meta.js                   (copy)
+   + src/content.js                            │
+        │                                      ▼
+        ▼                            extension/content.js
+   tg-media-saver.user.js                      +  manifest.json
+   → install into Tampermonkey                 +  popup.html/.css + icons/
+        │                                      │
+        │                                      ▼  zip
+        │                            dist/tg-media-saver-extension.zip
+        │                            → load unpacked / distribute
+        └─ version injected from manifest (__VERSION__ replaced)
+```
 
 Developer / AI-agent details — in [`AGENTS.md`](./AGENTS.md).
 
@@ -222,5 +313,4 @@ PRs welcome: edit [`src/content.js`](./src/content.js), run `./scripts/build.sh`
 
 ## License
 
-[MIT](./LICENSE) © Denis Ermilov. Independent implementation; not a derivative of any existing
-script.
+[MIT](./LICENSE)
