@@ -1,5 +1,7 @@
-# Build output (the store zip and any transient artifacts)
-dist/
+# Build output. The release zip is committed so users can download it straight from the
+# repo (rebuild + recommit it on each release); any other dist/ artifact stays ignored.
+dist/*
+!dist/tg-media-saver-extension.zip
 
 # OS
 .DS_Store

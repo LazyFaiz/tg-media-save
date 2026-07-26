@@ -86,7 +86,20 @@ TG Media Saver добавляет кнопку ⬇ прямо на медиа в
 
 ## Установка
 
-### Режим 1 — Userscript (Tampermonkey / Violentmonkey)
+### Режим 1 — Расширение Chrome: скачать и загрузить распакованным (проще всего)
+
+Без git, без сборки, без Tampermonkey.
+
+1. Скачайте [`tg-media-saver-extension.zip`](https://github.com/eiler2005/tg-media-saver/raw/main/dist/tg-media-saver-extension.zip)
+   и распакуйте.
+2. Откройте `chrome://extensions` и включите **Developer mode** (справа сверху).
+3. Нажмите **Load unpacked** и выберите **распакованную папку** (ту, где `manifest.json`).
+4. Жёстко обновите Telegram (Cmd/Ctrl+Shift+R).
+
+> Chrome может при запуске показывать уведомление «Отключить расширения в режиме разработчика» —
+> это нормально для распакованных расширений; просто закройте его (режим разработчика оставьте включённым).
+
+### Режим 2 — Userscript (Tampermonkey / Violentmonkey)
 
 1. Установите [Tampermonkey](https://www.tampermonkey.net/) или [Violentmonkey](https://violentmonkey.github.io/).
 2. **Chrome (MV3):** включите **«Allow user scripts»** у Tampermonkey в `chrome://extensions`.
@@ -95,11 +108,11 @@ TG Media Saver добавляет кнопку ⬇ прямо на медиа в
    или **вручную:** вставьте его содержимое в новый скрипт.
 4. Жёстко обновите Telegram (Cmd/Ctrl+Shift+R).
 
-### Режим 2 — Расширение Chrome (MV3, Chrome 111+)
+### Режим 3 — Расширение Chrome из исходников (git clone)
 
 1. Откройте `chrome://extensions` и включите **Developer mode**.
-2. Нажмите **Load unpacked** и выберите папку [`extension/`](extension) (ту, где
-   `manifest.json`). Для сборки из исходников см.
+2. Склонируйте репозиторий, затем нажмите **Load unpacked** и выберите папку [`extension/`](extension)
+   (ту, где `manifest.json`). Для пересборки из исходников см.
    [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#building-from-source).
 3. Жёстко обновите Telegram (Cmd/Ctrl+Shift+R).
 

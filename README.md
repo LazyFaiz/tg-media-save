@@ -86,7 +86,20 @@ its real name. No separate app — it runs right in your browser.
 
 ## Install
 
-### Mode 1 — Userscript (Tampermonkey / Violentmonkey)
+### Mode 1 — Chrome extension: download & load unpacked (easiest)
+
+No git, no build, no Tampermonkey.
+
+1. Download [`tg-media-saver-extension.zip`](https://github.com/eiler2005/tg-media-saver/raw/main/dist/tg-media-saver-extension.zip)
+   and unzip it.
+2. Open `chrome://extensions` and enable **Developer mode** (top-right).
+3. Click **Load unpacked** and select the **unzipped folder** (the one with `manifest.json`).
+4. Hard-reload Telegram (Cmd/Ctrl+Shift+R).
+
+> Chrome may show a "Disable developer mode extensions" notice on launch — normal for unpacked
+> extensions; just dismiss it (keep Developer mode on).
+
+### Mode 2 — Userscript (Tampermonkey / Violentmonkey)
 
 1. Install [Tampermonkey](https://www.tampermonkey.net/) or [Violentmonkey](https://violentmonkey.github.io/).
 2. **Chrome (MV3):** enable Tampermonkey's **"Allow user scripts"** in `chrome://extensions`.
@@ -95,11 +108,11 @@ its real name. No separate app — it runs right in your browser.
    or **manually:** paste its contents into a new script.
 4. Hard-reload Telegram (Cmd/Ctrl+Shift+R).
 
-### Mode 2 — Chrome extension (MV3, Chrome 111+)
+### Mode 3 — Chrome extension from source (git clone)
 
 1. Open `chrome://extensions` and enable **Developer mode**.
-2. Click **Load unpacked** and select the [`extension/`](extension) folder (the one with
-   `manifest.json`). To build from source first, see
+2. Clone the repo, then click **Load unpacked** and select the [`extension/`](extension) folder
+   (the one with `manifest.json`). To rebuild from source, see
    [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#building-from-source).
 3. Hard-reload Telegram (Cmd/Ctrl+Shift+R).
 
