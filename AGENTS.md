@@ -46,7 +46,7 @@ It ships in **two distribution modes from a single source of truth**:
   for anything that must touch the media pipeline.
 
 - **Stream descriptor.** `/k/stream/<seg>` where `<seg>` is `decodeURIComponent` + `JSON.parse`
-  of `{ dcId, location, size, mimeType, fileName }`. `describe(url)` extracts the real
+  of `{ dcId, location, size, mimeType, fileName }`. `describeStream(url)` extracts the real
   `fileName`/`size`/`mimeType`. This is how we name files correctly.
 
 - **Capture.** Media URLs are discovered by **polling** `<video>`/`<audio>` `currentSrc`
@@ -77,6 +77,11 @@ assets/icon.svg            # Vector icon source (design reference).
 assets/icon128.png,512.png # GENERATED store/promo icons.
 scripts/build.sh           # Build: userscript + extension/content.js + dist zip.
 scripts/make_icons.py      # Regenerate PNG icons (Pillow via uv).
+test/                      # Node built-in tests (unit, download engine, content boot, build).
+test/helpers.js            # DOM shim so src/content.js loads in Node.
+package.json               # `npm test` / `npm run build` (no runtime deps).
+.github/workflows/ci.yml   # GitHub Actions: npm test on push/PR.
+README.md / README.ru.md   # User docs (English base + Russian).
 dist/                      # Build output (gitignored).
 ```
 
@@ -86,16 +91,42 @@ dist/                      # Build output (gitignored).
 # Build both distributables (reads version from extension/manifest.json)
 ./scripts/build.sh
 
+# Run the test suite (Node built-in runner, no dependencies)
+npm test
+
 # Regenerate icons after editing assets/icon.svg or scripts/make_icons.py
 uv run --with pillow python scripts/make_icons.py
 
-# Sanity checks
+# Quick sanity checks
 node --check src/content.js
 python3 -c "import json;json.load(open('extension/manifest.json'))"
 ```
 
-There is **no test framework and no linter configured**. Before submitting changes:
-1. `node --check src/content.js` (syntax).
+## Testing
+
+Tests use Node's built-in test runner (`node --test`) — **no dependencies**, run via `npm test`.
+CI (`.github/workflows/ci.yml`) runs `npm test` on every push/PR.
+
+- `test/unit.test.js` — pure helpers: `describeStream`, `humanSize`, `extFromMime`, `withExt`.
+- `test/download.test.js` — the core `download()` engine against a **mocked `page.fetch`**:
+  Range chunking + blob concatenation, the "server ignores Range" fallback, the `blob:`/`data:`
+  single-shot branch, and non-2xx error propagation.
+- `test/content.test.js` — loads the real `src/content.js` under a DOM shim and verifies the
+  boot path exposes the `tgSaver` console API.
+- `test/build.test.js` — runs `scripts/build.sh` and validates every artifact.
+
+**Test hook in `src/content.js`:** the IIFE ends with a guarded
+`if (typeof module !== "undefined" && module.exports) module.exports = { describeStream,
+humanSize, extFromMime, withExt, download }`. This is a no-op in browsers/userscript (no
+`module`). Keep it when refactoring; tests depend on it. `download` is exported so the engine
+can be tested with a mocked page context.
+
+**DOM shim (`test/helpers.js`):** sets `global.window = {}` and a minimal `document` with
+`body: null` so the IIFE loads in Node without running `boot()` (no timers/DOM). Tests that
+exercise `download()` then set `document.body` and a recording `document.createElement`.
+
+Before submitting changes, all of these must pass:
+1. `npm test` (unit + download engine + build/manifest).
 2. `./scripts/build.sh` (regenerates artifacts; must succeed).
 3. Manual smoke test: load the extension unpacked (or the userscript) on `web.telegram.org`,
    play a video, confirm the ⬇ appears and saves. See README → Troubleshooting.

@@ -91,7 +91,7 @@
   };
 
   // Parse a Telegram /k/stream/<json> descriptor -> {name,size,mime,dcId} | null
-  const describe = (url) => {
+  const describeStream = (url) => {
     try {
       const seg = url.split("/").pop();
       const d = JSON.parse(decodeURIComponent(seg));
@@ -119,14 +119,15 @@
   // Download a media URL. Uses the File System Access API when available (real file name +
   // streaming straight to disk), otherwise accumulates Range chunks into an in-memory Blob.
   const download = async (url, onProgress) => {
-    const meta = describe(url);
+    const meta = describeStream(url);
     const name = (meta && meta.name) || `tg-media-${Date.now()}`;
 
     // Single-shot sources (MSE blob / data URI) have no Range support.
     if (/^(blob:|data:)/.test(url)) {
       const blob = await (await page.fetch(url)).blob();
-      saveBlob(blob, withExt(name, blob.type));
-      return name;
+      const finalName = withExt(name, blob.type);
+      saveBlob(blob, finalName);
+      return finalName;
     }
 
     let writable = null;
@@ -155,14 +156,15 @@
 
       if (!range) {
         // Server ignored Range and sent the whole file at once.
+        const finalName = withExt(name, mime);
         if (writable) {
           await writable.write(chunk);
           await writable.close();
         } else {
-          saveBlob(chunk, withExt(name, mime));
+          saveBlob(chunk, finalName);
         }
         if (onProgress) onProgress(1);
-        return name;
+        return finalName;
       }
 
       const m = /bytes (\d+)-(\d+)\/(\d+)/.exec(range);
@@ -182,7 +184,7 @@
     } else {
       saveBlob(new page.Blob(parts, { type: mime }), withExt(name, mime));
     }
-    return name;
+    return withExt(name, mime);
   };
 
   // ---------- capture ----------
@@ -196,7 +198,7 @@
       if (!url || url.startsWith("data:")) return;
       if (!el.getAttribute("data-tgs-src")) {
         el.setAttribute("data-tgs-src", url);
-        state.last = { url, kind: el.tagName === "AUDIO" ? "audio" : "video", meta: describe(url) };
+        state.last = { url, kind: el.tagName === "AUDIO" ? "audio" : "video", meta: describeStream(url) };
         log("captured", el.tagName, state.last.meta ? state.last.meta.name : url);
         refreshFloating();
       }
@@ -383,6 +385,13 @@
     };
   } catch (_) {
     /* ignore */
+  }
+
+  // Test hook: expose helpers to Node unit tests. No-op in browsers/userscript
+  // (there `module` is undefined). `download` is exported to test the core engine
+  // against a mocked page.fetch; the DOM/UI code paths are not exported.
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports = { describeStream, humanSize, extFromMime, withExt, download };
   }
 
   // ---------- boot ----------

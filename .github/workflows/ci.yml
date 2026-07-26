@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    name: Build & test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install zip (required by scripts/build.sh)
+        run: sudo apt-get update && sudo apt-get install -y zip
+
+      - name: Run tests (unit + download engine + build/manifest)
+        run: npm test

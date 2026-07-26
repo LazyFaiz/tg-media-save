@@ -4,6 +4,26 @@ All notable changes to **TG Media Saver** are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- Test suite on Node's built-in runner (`npm test`, no dependencies): unit tests for the pure
+  helpers, the core `download()` engine (Range chunking, blob concatenation, `blob:`/`data:`
+  single-shot, "server ignores Range" fallback, error propagation), the content-script boot
+  path, and end-to-end build/manifest validation.
+- GitHub Actions CI (`.github/workflows/ci.yml`) running `npm test` on push/PR, with a CI badge
+  in the README.
+- Bilingual README: English base (`README.md`) + Russian (`README.ru.md`).
+
+### Changed
+
+- `download()` now returns the final file name **with extension** in every branch (previously
+  the `blob:`/`data:` and no-`Range` branches returned the base name without extension).
+- Renamed the internal stream-descriptor parser `describe` → `describeStream` (clearer; avoids
+  clashing with test-framework globals) and exposed it, along with `download`, via a guarded
+  `module.exports` test hook (no-op in browsers).
+
 ## [1.0.0] - 2026-07-26
 
 ### Added

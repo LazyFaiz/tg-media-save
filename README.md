@@ -1,219 +1,226 @@
 # TG Media Saver
 
+[![CI](https://github.com/eiler2005/tg-media-saver/actions/workflows/ci.yml/badge.svg)](https://github.com/eiler2005/tg-media-saver/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-229ed9.svg)](./LICENSE)
 [![Version](https://img.shields.io/badge/version-1.0.0-229ed9.svg)](./CHANGELOG.md)
-[![Platform](https://img.shields.io/badge/Telegram-Web-229ed9.svg)](https://web.telegram.org)
 [![Chrome](https://img.shields.io/badge/Chrome-MV3-229ed9.svg)](https://developer.chrome.com/docs/extensions/mv3)
 
-Сохраняйте **фото, видео, GIF и голосовые сообщения** из [Telegram Web](https://web.telegram.org)
-(клиенты `/k/` и `/z/`) — в том числе из каналов с включённым **«Запретить сохранение контента»**.
+**Русский → [README.ru.md](./README.ru.md)**
 
-Оригинальная независимая реализация. Не аффилирована с Telegram.
+Save **photos, videos, GIFs and voice messages** from [Telegram Web](https://web.telegram.org)
+(the `/k/` and `/z/` clients) — including channels with **"Restrict saving content"** enabled.
 
-> ⚠️ **Ответственное использование.** Инструмент работает только с тем, что ваш аккаунт и так
-> видит в Telegram. Используйте его лишь для контента, на который у вас есть права (ваши файлы,
-> разрешённые материалы). Соблюдайте условия использования Telegram и авторские права владельцев.
+Original, independent implementation. Not affiliated with Telegram.
+
+> ⚠️ **Responsible use.** The tool only works with what your account can already see in Telegram.
+> Use it only for content you have the rights to (your own files, permitted materials). Respect
+> Telegram's Terms of Service and content owners' copyright.
 
 ---
 
-## Возможности
+## Features
 
-- ⬇ кнопка сохранения прямо на видео/фото **в ленте** чата.
-- Плавающая ⬇ кнопка слева внизу — сохраняет последнее загруженное медиа, показывает **настоящее
-  имя файла и размер**.
-- Большие файлы пишутся **напрямую на диск** через File System Access API (где доступно),
-  иначе — сборка в Blob и обычное скачивание.
-- Корректные имена и расширения файлов (берутся из дескриптора потока Telegram).
-- Обходит строгий Content-Security-Policy Telegram (инжект как content script, а не в мир страницы).
-- **Никаких разрешений** сверх работы на `web.telegram.org`; ничего не собирает и никуда не отправляет.
+- ⬇ save button right on videos/photos **in the chat feed**.
+- Floating ⬇ button (bottom-left) — saves the last loaded media, shows the **real file name and size**.
+- Large files stream **straight to disk** via the File System Access API where available,
+  otherwise assembled into a Blob and downloaded.
+- Correct file names and extensions (parsed from Telegram's stream descriptor).
+- Bypasses Telegram's strict Content-Security-Policy (content-script injection, not page-world).
+- **No permissions** beyond running on `web.telegram.org`; collects nothing, sends nothing anywhere.
 
-## Два режима установки
+## Two installation modes
 
-Один и тот же код распространяется в двух видах. **Используйте один режим за раз**
-(иначе кнопки задвоятся).
+The same code ships in two forms. **Use one mode at a time** (otherwise buttons duplicate).
 
-| Режим | Для кого | Как ставить |
+| Mode | For | How to install |
 |---|---|---|
-| **1. Userscript** | Tampermonkey / Violentmonkey | [инструкция ниже](#режим-1-userscript) |
-| **2. Расширение Chrome (MV3)** | Chrome / Edge / Brave / Chromium 111+ | [инструкция ниже](#режим-2-расширение-chrome) |
+| **1. Userscript** | Tampermonkey / Violentmonkey | [below](#mode-1-userscript) |
+| **2. Chrome extension (MV3)** | Chrome / Edge / Brave / Chromium 111+ | [below](#mode-2-chrome-extension) |
 
 ---
 
-## Режим 1: Userscript
+## Mode 1: Userscript
 
-1. Установите [Tampermonkey](https://www.tampermonkey.net/) или
+1. Install [Tampermonkey](https://www.tampermonkey.net/) or
    [Violentmonkey](https://violentmonkey.github.io/).
-2. **Chrome (Manifest V3):** в `chrome://extensions` → Tampermonkey → включите
-   **«Allow user scripts»** («запуск кода, не проверенного Google»). Без этого тумблера
-   пользовательские скрипты в Chrome молча не запускаются.
-3. Установите скрипт одним из способов:
-   - **в один клик:** откройте
+2. **Chrome (Manifest V3):** in `chrome://extensions` → Tampermonkey → enable
+   **"Allow user scripts"** ("run code not reviewed by Google"). Without this toggle,
+   userscripts silently do not run in Chrome.
+3. Install the script either way:
+   - **one click:** open
      [`tg-media-saver.user.js`](https://raw.githubusercontent.com/eiler2005/tg-media-saver/main/tg-media-saver.user.js)
-     — Tampermonkey предложит установку (автообновление уже вшито через `@updateURL`);
-   - **вручную:** создайте новый скрипт и вставьте содержимое
+     — Tampermonkey will offer to install it (auto-update is built in via `@updateURL`);
+   - **manually:** create a new script and paste the contents of
      [`tg-media-saver.user.js`](./tg-media-saver.user.js).
-4. Жёстко обновите вкладку Telegram (Cmd/Ctrl+Shift+R).
+4. Hard-reload the Telegram tab (Cmd/Ctrl+Shift+R).
 
-## Режим 2: Расширение Chrome
+## Mode 2: Chrome extension
 
-Требуется Chrome/Chromium **111+** (ради `content_scripts` `"world": "MAIN"`).
+Requires Chrome/Chromium **111+** (for `content_scripts` `"world": "MAIN"`).
 
-**Вариант A — из исходников (load unpacked):**
+**Option A — from source (load unpacked):**
 
-1. Склонируйте репозиторий и соберите (см. [Сборка](#сборка-из-исходников)):
+1. Clone the repo and build (see [Building](#building-from-source)):
    ```bash
    git clone https://github.com/eiler2005/tg-media-saver.git
    cd tg-media-saver
    ./scripts/build.sh
    ```
-2. Откройте `chrome://extensions`, включите **Developer mode** (справа сверху).
-3. Нажмите **Load unpacked** и выберите папку [`extension/`](./extension)
-   (ту, где лежит `manifest.json`).
-4. Жёстко обновите вкладку Telegram (Cmd/Ctrl+Shift+R).
+2. Open `chrome://extensions`, enable **Developer mode** (top-right).
+3. Click **Load unpacked** and select the [`extension/`](./extension) folder
+   (the one containing `manifest.json`).
+4. Hard-reload the Telegram tab (Cmd/Ctrl+Shift+R).
 
-**Вариант B — готовый zip:** после `./scripts/build.sh` появится
-`dist/tg-media-saver-extension.zip` — его можно загрузить в Chrome Web Store
-(см. [Публикация](#публикация-в-chrome-web-store)) или распаковать и поставить как в варианте A.
+**Option B — ready zip:** after `./scripts/build.sh`, `dist/tg-media-saver-extension.zip`
+is produced (manifest at the archive root), ready to load or distribute.
 
-Расширение инжектится браузером как MAIN-world content script, поэтому **не блокируется CSP**
-страницы и **не требует** тамперманкиевского тумблера «Allow user scripts».
-
----
-
-## Как пользоваться
-
-1. Откройте Telegram Web и **воспроизведите** видео/аудио (или откройте фото) — страница должна
-   реально загрузить медиа.
-2. Нажмите ⬇ **на самом медиа** в ленте — либо плавающую ⬇ кнопку **слева внизу**.
-3. Файл сохранится с настоящим именем; прогресс показывается в процентах над плавающей кнопкой.
-
-Кнопка появляется только когда страница действительно получила медиа. Если видео **не играет** —
-значит, Telegram не отдаёт поток (см. [Troubleshooting](#troubleshooting)).
-
-### Консольные хелперы
-
-В DevTools → Console доступны:
-
-- `tgSaver.status()` — что поймано последним;
-- `tgSaver.downloadLast()` — вручную скачать последнее пойманное медиа;
-- `tgSaver.debug(true)` — подробное логирование.
+The extension is injected by the browser as a MAIN-world content script, so it is **not blocked
+by the page CSP** and does **not** need Tampermonkey's "Allow user scripts" toggle.
 
 ---
 
-## Сборка из исходников
+## Usage
 
-Единый источник кода — [`src/content.js`](./src/content.js). Сборка генерирует оба
-дистрибутива (нужны `bash`, `python3`, `zip`; для иконок — `uv`):
+1. Open Telegram Web and **play** the video/audio (or open the photo) — the page must actually
+   load the media.
+2. Click ⬇ **on the media** in the feed — or the floating ⬇ button **bottom-left**.
+3. The file saves with its real name; progress is shown as a percent above the floating button.
+
+The button only appears once the page has actually received the media. If a video **won't play**,
+Telegram isn't serving the stream (see [Troubleshooting](#troubleshooting)).
+
+### Console helpers
+
+In DevTools → Console:
+
+- `tgSaver.status()` — what was captured last;
+- `tgSaver.downloadLast()` — manually save the last captured media;
+- `tgSaver.debug(true)` — verbose logging.
+
+---
+
+## Building from source
+
+The single source of truth is [`src/content.js`](./src/content.js). The build generates both
+distributables (needs `bash`, `python3`, `zip`; for icons, `uv`):
 
 ```bash
 ./scripts/build.sh
 ```
 
-Результат:
+Output:
 
-- `tg-media-saver.user.js` — userscript (версия подставляется из `extension/manifest.json`);
-- `extension/content.js` — копия `src/content.js` для расширения;
-- `dist/tg-media-saver-extension.zip` — zip расширения для магазина (manifest в корне архива).
+- `tg-media-saver.user.js` — userscript (version injected from `extension/manifest.json`);
+- `extension/content.js` — copy of `src/content.js` for the extension;
+- `dist/tg-media-saver-extension.zip` — store-ready zip (manifest at the archive root).
 
-Иконки (если меняли дизайн в [`assets/icon.svg`](./assets/icon.svg) или
+Icons (if you change the design in [`assets/icon.svg`](./assets/icon.svg) or
 [`scripts/make_icons.py`](./scripts/make_icons.py)):
 
 ```bash
 uv run --with pillow python scripts/make_icons.py
 ```
 
-> После правок в `src/content.js` всегда запускайте `./scripts/build.sh`, чтобы обновить
-> `tg-media-saver.user.js` и `extension/content.js` (это сгенерированные файлы).
+> After editing `src/content.js`, always run `./scripts/build.sh` to refresh
+> `tg-media-saver.user.js` and `extension/content.js` (they are generated files).
 
-## Публикация в Chrome Web Store
+## Testing
 
-1. Аккаунт разработчика (разово $5): `chrome.google.com/webstore/devconsole`.
-2. Иконки уже есть (`extension/icons/`, для витрины — `assets/icon128.png`).
-3. Подготовьте скриншоты 1280×800 и описание.
-4. Загрузите `dist/tg-media-saver-extension.zip` → заполните листинг → отправьте на ревью.
+Tests run on Node's built-in test runner — **no dependencies**:
 
-> ⚠️ **Важно про модерацию.** Ключевая функция — сохранение из каналов с «запретом сохранения» —
-> это обход ограничения, выставленного владельцем канала. Такие расширения нередко **отклоняют
-> или позже удаляют** из Chrome Web Store (политики про обход ограничений / авторские права /
-> ToS сервисов). К этому стоит быть готовым. Запасные пути: Firefox Add-ons (обычно лояльнее),
-> userscript на Greasy Fork, или самостоятельная раздача unpacked-расширения через этот репозиторий.
+```bash
+npm test
+```
+
+Coverage:
+
+- `test/unit.test.js` — pure helpers (`describeStream`, `humanSize`, `extFromMime`, `withExt`).
+- `test/download.test.js` — the core download engine against a mocked `page.fetch`:
+  Range chunking + blob concatenation, the "server ignores Range" fallback, the `blob:`/`data:`
+  single-shot branch, and error propagation.
+- `test/content.test.js` — loads the real `src/content.js` under a DOM shim and verifies the
+  boot path exposes the `tgSaver` console API.
+- `test/build.test.js` — runs `scripts/build.sh` and validates every artifact (userscript header
+  + injected version, `extension/content.js` in sync with the source, MV3 manifest fields,
+  icons present, popup has no inline script).
+
+CI runs `npm test` on every push and pull request (GitHub Actions).
 
 ---
 
 ## Troubleshooting
 
-- **Нет кнопок / нет логов `[TG Media Saver]`.**
-  - Userscript: включён ли скрипт в Tampermonkey? В Chrome включён ли тумблер **«Allow user scripts»**?
-  - Расширение: включено ли оно в `chrome://extensions`? Chrome ≥ 111?
-- **Видео не играет, в консоли `FetchEvent … rejected`, `ERR_NETWORK_CHANGED`,
-  `[MP-SERVICE] worker task error`.** Сломан конвейер Telegram (часто после смены сети/VPN),
-  а не расширение. Лечение: стабилизировать сеть → закрыть другие вкладки `web.telegram.org` →
-  Cmd+Shift+R. Не помогло → DevTools → Application → Service Workers → **Unregister** → reload
-  (**не** включать «Bypass for network»). Ядерно → Storage → **Clear site data** → перелогин.
-- **Кнопка есть, но скачивание не стартует.** Откройте DevTools → Console → фильтр
-  `TG Media Saver` и посмотрите ошибку. Убедитесь, что медиа реально воспроизводится.
+- **No buttons / no `[TG Media Saver]` logs.**
+  - Userscript: is the script enabled in Tampermonkey? On Chrome, is **"Allow user scripts"** on?
+  - Extension: is it enabled in `chrome://extensions`? Chrome ≥ 111?
+- **Video won't play; console shows `FetchEvent … rejected`, `ERR_NETWORK_CHANGED`,
+  `[MP-SERVICE] worker task error`.** Telegram's pipeline is broken (often after a network/VPN
+  change), not the extension. Fix: stabilize the network → close other `web.telegram.org` tabs →
+  Cmd+Shift+R. Still broken → DevTools → Application → Service Workers → **Unregister** → reload
+  (do **not** enable "Bypass for network"). Nuclear → Storage → **Clear site data** → log in again.
+- **Button present but download doesn't start.** Open DevTools → Console → filter
+  `TG Media Saver` and read the error. Make sure the media actually plays.
 
-## Как это работает (кратко)
+## How it works (brief)
 
-- Telegram Web имеет строгий CSP, блокирующий инжект в мир страницы. Оба режима обходят это:
-  userscript — через isolated world (`@grant unsafeWindow`), расширение — через браузерный
-  MAIN-world content script.
-- `/k/` отдаёт медиа через свой **Service Worker** по адресу `/k/stream/<urlencoded JSON>`.
-  Этот JSON-дескриптор содержит настоящие `fileName`, `size`, `mimeType`, `dcId`.
-- Чтобы получить байты, `fetch` должен выполняться **в контексте страницы** (тогда его
-  перехватывает Service Worker). Поэтому все сетевые вызовы идут через `page.fetch`
-  (`unsafeWindow.fetch` / `window.fetch`).
-- Ссылки на медиа находятся опросом `currentSrc` у `<video>`/`<audio>` (DOM общий для обоих миров).
-- Скачивание — HTTP `Range`-запросами по кускам, затем стриминг на диск (File System Access)
-  или склейка в Blob.
+- Telegram Web has a strict CSP that blocks page-world script injection. Both modes avoid it:
+  the userscript runs in the isolated world (`@grant unsafeWindow`); the extension runs as a
+  browser-injected MAIN-world content script.
+- `/k/` serves media through its own **Service Worker** at `/k/stream/<urlencoded JSON>`. That
+  JSON descriptor carries the real `fileName`, `size`, `mimeType`, `dcId`.
+- To receive the bytes, the fetch must run in the **page context** (so the Service Worker
+  intercepts it). Every network call goes through `page.fetch` (`unsafeWindow.fetch` /
+  `window.fetch`).
+- Media URLs are discovered by polling `<video>`/`<audio>` `currentSrc` (the DOM is shared
+  between worlds).
+- Downloads use HTTP `Range` requests, chunked, then streamed to disk (File System Access) or
+  concatenated into a Blob.
 
-Подробности для разработчиков и AI-агентов — в [`AGENTS.md`](./AGENTS.md).
+Developer / AI-agent details — in [`AGENTS.md`](./AGENTS.md).
 
-## Структура проекта
+## Project structure
 
 ```
 tg-media-saver/
-├── README.md                  # этот файл
-├── AGENTS.md                  # контекст для разработчиков и AI-агентов
+├── README.md                  # this file (English)
+├── README.ru.md               # Russian version
+├── AGENTS.md                  # context for developers and AI agents
 ├── LICENSE                    # MIT
 ├── CHANGELOG.md
+├── package.json               # npm test (Node built-in runner, no deps)
 ├── .gitignore
-├── tg-media-saver.user.js     # сгенерированный userscript (ставится в Tampermonkey)
+├── tg-media-saver.user.js     # generated userscript (install into Tampermonkey)
 ├── src/
-│   ├── content.js             # ЕДИНЫЙ источник логики
-│   └── userscript.meta.js     # шапка userscript (шаблон с __VERSION__)
+│   ├── content.js             # SINGLE source of logic
+│   └── userscript.meta.js     # userscript header (template with __VERSION__)
 ├── extension/
-│   ├── manifest.json          # MV3-манифест (иконки, popup, content script)
-│   ├── content.js             # сгенерированная копия src/content.js
-│   ├── popup.html / popup.css # подсказка по кнопке на панели
+│   ├── manifest.json          # MV3 manifest (icons, popup, content script)
+│   ├── content.js             # generated copy of src/content.js
+│   ├── popup.html / popup.css # toolbar help popup
 │   └── icons/                 # icon16/48/128.png
 ├── assets/
-│   ├── icon.svg               # векторный исходник иконки
+│   ├── icon.svg               # vector icon source
 │   └── icon128.png / icon512.png
 ├── scripts/
-│   ├── build.sh               # сборка обоих дистрибутивов + zip
-│   └── make_icons.py          # генерация PNG-иконок (Pillow через uv)
-└── dist/                      # артефакты сборки (в git не коммитится)
+│   ├── build.sh               # build both distributables + zip
+│   └── make_icons.py          # generate PNG icons (Pillow via uv)
+├── test/                      # Node built-in test runner (no deps)
+│   ├── helpers.js             # DOM shim for loading content.js in Node
+│   ├── unit.test.js
+│   ├── download.test.js
+│   ├── content.test.js
+│   └── build.test.js
+├── .github/workflows/ci.yml   # GitHub Actions: npm test on push/PR
+└── dist/                      # build output (not committed)
 ```
 
-## Вклад
+## Contributing
 
-Багрепорты и идеи — в [Issues](https://github.com/eiler2005/tg-media-saver/issues).
-PR приветствуются: правьте [`src/content.js`](./src/content.js) и запускайте `./scripts/build.sh`.
+Bug reports and ideas — in [Issues](https://github.com/eiler2005/tg-media-saver/issues).
+PRs welcome: edit [`src/content.js`](./src/content.js), run `./scripts/build.sh`, and make sure
+`npm test` passes.
 
-## Лицензия
+## License
 
-[MIT](./LICENSE) © Denis Ermilov. Независимая реализация; не является производной какого-либо
-существующего скрипта.
-
----
-
-### English summary
-
-**TG Media Saver** saves photos, videos, GIFs and voice messages from Telegram Web
-(`web.telegram.org`, `/k/` and `/z/` clients), including channels with "restrict saving content"
-enabled. It ships as both a **Tampermonkey userscript** and a **Chrome MV3 extension** built from
-a single source ([`src/content.js`](./src/content.js)). It runs as a content script to bypass
-Telegram's strict CSP and fetches media in the page context so Telegram's Service Worker serves
-the bytes. MIT licensed, original implementation, not affiliated with Telegram. Use responsibly —
-only save content you have the rights to.
+[MIT](./LICENSE) © Denis Ermilov. Independent implementation; not a derivative of any existing
+script.
