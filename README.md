@@ -108,7 +108,10 @@ No git, no build, no Tampermonkey.
    or **manually:** paste its contents into a new script.
 4. Hard-reload Telegram (Cmd/Ctrl+Shift+R).
 
-### Mode 3 — Chrome extension from source (git clone)
+### Mode 3 — From source (for developers & contributors)
+
+To modify, inspect, or build the extension yourself — or to run the latest `main` before a
+release zip is published.
 
 1. Open `chrome://extensions` and enable **Developer mode**.
 2. Clone the repo, then click **Load unpacked** and select the [`extension/`](extension) folder
