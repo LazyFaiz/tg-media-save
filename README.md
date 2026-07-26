@@ -74,6 +74,16 @@ Full details, ASCII diagrams and the build pipeline: [`docs/ARCHITECTURE.md`](do
 
 ---
 
+## Demo
+
+A video post in a Telegram Web channel — the address bar shows `web.telegram.org/k/…`.
+TG Media Saver adds a ⬇ button right on the media in the feed; click it to save the file with
+its real name. No separate app — it runs right in your browser.
+
+![The ⬇ save button appears on a video in the Telegram Web feed](docs/assets/demo-button.png)
+
+---
+
 ## Install
 
 ### Mode 1 — Userscript (Tampermonkey / Violentmonkey)
