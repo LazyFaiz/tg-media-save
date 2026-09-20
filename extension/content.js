@@ -84,6 +84,25 @@
     return null;
   };
 
+  // WebK overrides video.src to retain hls/<document>, while currentSrc is an
+  // unfetchable MediaSource blob. Both hls and stream accept DownloadOptions.
+  const fileSource = (value) => {
+    if (!value || typeof value !== "string") return null;
+    try {
+      const url = new page.URL(value, page.location.href);
+      if (url.origin !== page.location.origin) return null;
+      const match = /^(.*\/)(hls|stream)\/([^/]+)$/.exec(url.pathname);
+      if (!match) return null;
+      const descriptor = JSON.parse(decodeURIComponent(match[3]));
+      if (descriptor.location?._ !== "inputDocumentFileLocation" ||
+          !descriptor.location.id || !Number.isSafeInteger(descriptor.size) || descriptor.size <= 0) return null;
+      url.pathname = `${match[1]}stream/${match[3]}`;
+      return url.href;
+    } catch (_) {
+      return null;
+    }
+  };
+
   // ---------- download engine ----------
   const saveBlob = (blob, name) => {
     const u = page.URL.createObjectURL(blob);
@@ -119,10 +138,11 @@
   // Download a media URL. Uses the File System Access API when available (real file name +
   // streaming straight to disk), otherwise accumulates Range chunks into an in-memory Blob.
   const download = async (url, onProgress) => {
+    url = fileSource(url) || url;
     const meta = describeStream(url);
     const name = (meta && meta.name) || `tg-media-${Date.now()}`;
 
-    // Single-shot sources (MSE blob / data URI) have no Range support.
+    // Ordinary Blob and data URLs contain files; MediaSource blobs do not.
     if (/^(blob:|data:)/.test(url)) {
       let blob;
       try {
@@ -154,7 +174,8 @@
 
     try {
       for (;;) {
-        const endRequested = offset + CHUNK_SIZE - 1;
+        const knownSize = total || (meta && meta.size);
+        const endRequested = knownSize ? Math.min(offset + CHUNK_SIZE, knownSize) - 1 : offset + CHUNK_SIZE - 1;
         const { res, chunk } = await fetchChunk(url, {
           headers: { Range: `bytes=${offset}-${endRequested}` },
         });
@@ -222,7 +243,16 @@
   // ---------- capture ----------
   const state = { last: null };
 
-  const mediaUrl = (el) => el && (el.currentSrc || el.src || el.getAttribute("data-tgs-src") || "");
+  const mediaUrl = (el) => {
+    if (!el) return "";
+    const sources = [el.src, el.getAttribute("src"),
+      ...Array.from(el.querySelectorAll?.("source[src]") || [], (source) => source.src)];
+    for (const source of sources) {
+      const file = fileSource(source);
+      if (file) return file;
+    }
+    return el.currentSrc || el.src || "";
+  };
 
   const capture = () => {
     document.querySelectorAll("video, audio").forEach((el) => {
@@ -230,7 +260,7 @@
       if (!url || url.startsWith("data:")) return;
       if (el.getAttribute("data-tgs-src") !== url) {
         el.setAttribute("data-tgs-src", url);
-        state.last = { url, kind: el.tagName === "AUDIO" ? "audio" : "video", meta: describeStream(url) };
+        state.last = { url, element: el, kind: el.tagName === "AUDIO" ? "audio" : "video", meta: describeStream(url) };
         log("captured", el.tagName, state.last.meta ? state.last.meta.name : url);
         refreshFloating();
       }
@@ -318,7 +348,7 @@
         info("nothing captured yet — play a video/audio first");
         return;
       }
-      runDownload(state.last.url);
+      runDownload(mediaUrl(state.last.element) || state.last.url);
     });
 
     floatCap = document.createElement("div");
@@ -410,7 +440,7 @@
   try {
     page.tgSaver = {
       status: () => ({ last: state.last, verbose }),
-      downloadLast: () => state.last && runDownload(state.last.url),
+      downloadLast: () => state.last && runDownload(mediaUrl(state.last.element) || state.last.url),
       debug: (v) => {
         verbose = !!v;
         info("verbose logging", verbose);
@@ -424,7 +454,7 @@
   // (there `module` is undefined). `download` is exported to test the core engine
   // against a mocked page.fetch; the DOM/UI code paths are not exported.
   if (typeof module !== "undefined" && module.exports) {
-    module.exports = { describeStream, humanSize, extFromMime, withExt, download };
+    module.exports = { describeStream, humanSize, extFromMime, withExt, download, fileSource, mediaUrl };
   }
 
   // ---------- boot ----------

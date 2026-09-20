@@ -168,3 +168,13 @@ tg-media-save/
 ├── .github/workflows/ci.yml   # GitHub Actions: npm test on push/PR
 └── dist/                      # build output (not committed)
 ```
+
+
+## WebK HLS source resolution (1.0.3)
+
+WebK overrides each video element's `src` property and retains its `hls/<DownloadOptions>` source, while `currentSrc` points to a MediaSource blob. Read `src` first, validate its same-origin document descriptor, and replace only the `hls` path component with `stream`. Never select a different video based on the most recent network request.
+
+Verified against Telegram WebK sources:
+- https://github.com/morethanwords/tweb/blob/master/src/helpers/dom/createVideo.ts
+- https://github.com/morethanwords/tweb/blob/master/src/lib/appManagers/utils/docs/getDocumentURL.ts
+- https://github.com/morethanwords/tweb/blob/master/src/helpers/fileName.ts

@@ -23,7 +23,9 @@
 
 截图中的 Failed to fetch 是通用网络异常，不能单凭截图确定唯一根因。
 本修复不会重置 Telegram 会话或注销 Service Worker。若媒体本身无法播放，需恢复网络并刷新页面。
-MediaSource blob 并非普通文件，本版本会明确报错，不承诺所有流媒体均可下载。
+1.0.3 支持 Telegram WebK 在 video.src 保留 HLS 文档描述的媒体：自动转换为同一文档的 stream 地址，不再下载播放器的 MediaSource blob。对于没有可解析原始地址的 blob，仍可能报错。
+
+升级后请在扩展管理页重新加载扩展，并刷新 Telegram 页面。
 
 ## 开发与验证
 

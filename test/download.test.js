@@ -69,7 +69,7 @@ test("download: assembles a file from Range chunks", async () => {
   const name = await download(url, (p) => progress.push(p));
 
   assert.equal(name, "movie.mp4");
-  assert.deepEqual(calls, ["bytes=0-1048575", "bytes=50-1048625"]);
+  assert.deepEqual(calls, ["bytes=0-99", "bytes=50-99"]);
   assert.deepEqual(progress, [0.5, 1]);
 
   const a = lastAnchor();
@@ -201,7 +201,7 @@ test("download: retries a failed body at the same offset", async () => {
     return res(206, { 'content-range': 'bytes 0-2/3' }, 'abc');
   }});
   await download(streamUrl({ fileName: 'retry.bin', size: 3 }));
-  assert.deepEqual(calls, ['bytes=0-1048575', 'bytes=0-1048575']);
+  assert.deepEqual(calls, ['bytes=0-2', 'bytes=0-2']);
 });
 
 test("download: persistent network failure is bounded and aborts output", async () => {

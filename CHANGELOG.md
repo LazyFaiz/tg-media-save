@@ -1,3 +1,9 @@
+# 1.0.3
+
+- Resolve WebK HLS video.src descriptors to the matching stream endpoint instead of fetching MediaSource currentSrc blobs.
+- Re-resolve floating downloads when elements change and bound the final Range to the file size.
+- Add regression coverage for HLS sources, ordinary blobs, source children, and reused elements.
+
 # 1.0.2 (local fork)
 
 - Retry transient fetch/body failures with bounded backoff.

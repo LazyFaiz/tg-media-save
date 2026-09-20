@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "TG Media Save",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "minimum_chrome_version": "111",
   "description": "Save photos, videos, GIFs and voice messages from Telegram Web, including channels with restricted saving.",
   "author": "Denis Ermilov",
