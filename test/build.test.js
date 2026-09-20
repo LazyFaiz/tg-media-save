@@ -13,17 +13,17 @@ const exists = (p) => fs.existsSync(path.join(ROOT, p));
 
 test("build.sh succeeds and produces all artifacts", () => {
   execSync("python scripts/build.py", { cwd: ROOT, stdio: "pipe" });
-  assert.ok(exists("tg-media-saver.user.js"), "userscript");
+  assert.ok(exists("tg-media-save.user.js"), "userscript");
   assert.ok(exists("extension/content.js"), "extension content script");
-  assert.ok(exists("dist/tg-media-saver-extension.zip"), "store zip");
+  assert.ok(exists("dist/tg-media-save-extension.zip"), "store zip");
 });
 
 test("userscript has a valid header with the manifest version injected", () => {
   const manifest = JSON.parse(read("extension/manifest.json"));
-  const us = read("tg-media-saver.user.js");
+  const us = read("tg-media-save.user.js");
   assert.match(us, /^\/\/ ==UserScript==/);
   assert.match(us, /\/\/ ==\/UserScript==/);
-  assert.ok(us.includes("@name         TG Media Saver"));
+  assert.ok(us.includes("@name         tg-media-save"));
   assert.ok(us.includes(`@version      ${manifest.version}`), "version must match manifest");
   assert.ok(!us.includes("__VERSION__"), "version placeholder must be replaced");
 });

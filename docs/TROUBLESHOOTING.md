@@ -5,15 +5,15 @@ If something does not work, start here. For how the tool is built see
 
 ## First: confirm the script is actually running
 
-Open DevTools → Console and filter by `TG Media Saver`. On a working install you should see:
+Open DevTools → Console and filter by `tg-media-save`. On a working install you should see:
 
 ```
-[TG Media Saver] ready — play a video/audio, then press ⬇ (inline or bottom-left).
+[tg-media-save] ready — play a video/audio, then press ⬇ (inline or bottom-left).
 ```
 
-If there is **no** `[TG Media Saver]` line at all, the script is not running — see below.
+If there is **no** `[tg-media-save]` line at all, the script is not running — see below.
 
-## No buttons / no `[TG Media Saver]` logs
+## No buttons / no `[tg-media-save]` logs
 
 **Userscript:**
 - Is the script **enabled** in Tampermonkey / Violentmonkey?
@@ -29,7 +29,7 @@ If there is **no** `[TG Media Saver]` line at all, the script is not running —
 
 ## The button appears but nothing downloads
 
-- Open DevTools → Console → filter `TG Media Saver` and read the error.
+- Open DevTools → Console → filter `tg-media-save` and read the error.
 - Make sure the media **actually plays** in the browser. The tool can only save bytes the page
   itself can load — if the player never starts, there is no URL to fetch.
 
@@ -50,7 +50,7 @@ extension. The page cannot play the media, so no userscript can download it. Fix
 
 ## Updating after code changes
 
-1. `./scripts/build.sh` (regenerates `tg-media-saver.user.js` and `extension/content.js`).
-2. Userscript: re-paste the new `tg-media-saver.user.js` (or rely on `@updateURL` auto-update).
+1. `./scripts/build.sh` (regenerates `tg-media-save.user.js` and `extension/content.js`).
+2. Userscript: re-paste the new `tg-media-save.user.js` (or rely on `@updateURL` auto-update).
    Extension: in `chrome://extensions`, click the reload ↻ icon on the extension card.
 3. Hard-reload the Telegram tab.

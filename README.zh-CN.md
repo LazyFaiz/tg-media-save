@@ -1,4 +1,4 @@
-# TG Media Save（本地修复版）
+# tg-media-save（本地修复版）
 
 基于 https://github.com/eiler2005/tg-media-saver，保留原作者 MIT 许可证及历史。
 仅下载当前账号可访问且你有权保存的内容。不收集数据。
@@ -10,8 +10,8 @@
 3. 点击“加载已解压的扩展程序”，选择当前项目的 extension 文件夹。
 4. 刷新 Telegram Web，播放媒体后点击下载按钮。
 
-也可解压 dist/tg-media-saver-extension.zip 后加载。不要使用上游 README 的下载链接，它指向未修复的上游版本。
-油猴版本使用本项目 tg-media-saver.user.js；已移除上游更新地址，避免覆盖本地修复。
+也可解压 dist/tg-media-save-extension.zip 后加载。本项目 README 下载链接指向 LazyFaiz/tg-media-save。
+油猴版本使用本项目 tg-media-save.user.js；已移除上游更新地址，避免覆盖本地修复。
 
 ## 1.0.2 修复
 

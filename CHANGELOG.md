@@ -8,7 +8,7 @@
 
 # Changelog
 
-All notable changes to **TG Media Saver** are documented here.
+All notable changes to **tg-media-save** are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
@@ -40,7 +40,7 @@ adheres to [Semantic Versioning](https://semver.org/).
 - Save photos, videos, GIFs and voice messages from Telegram Web (`/k/` and `/z/`),
   including channels with "restrict saving content" enabled.
 - Two distribution modes from a single source (`src/content.js`):
-  - Tampermonkey / Violentmonkey **userscript** (`tg-media-saver.user.js`);
+  - Tampermonkey / Violentmonkey **userscript** (`tg-media-save.user.js`);
   - **Chrome MV3 extension** (`extension/`, MAIN-world content script).
 - Inline ⬇ buttons on feed media + floating ⬇ button with file name/size and progress.
 - Real file names and extensions parsed from Telegram's `/stream/` descriptor.

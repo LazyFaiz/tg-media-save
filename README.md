@@ -1,10 +1,10 @@
-# TG Media Saver
+# tg-media-save
 
-> Local fork 1.0.2: see [中文安装与修复说明](README.zh-CN.md). Build locally with `npm run build` (Node.js + Python 3). Upstream download links below do not include these fixes.
+> Local fork 1.0.2: see [中文安装与修复说明](README.zh-CN.md). Build locally with `npm run build` (Node.js + Python 3). Download links below point to this repository.
 
-![TG Media Saver — save photos, videos, GIFs and voice messages from Telegram Web](docs/assets/hero-banner.png)
+![tg-media-save — save photos, videos, GIFs and voice messages from Telegram Web](docs/assets/hero-banner.png)
 
-[![CI](https://github.com/eiler2005/tg-media-saver/actions/workflows/ci.yml/badge.svg)](https://github.com/eiler2005/tg-media-saver/actions/workflows/ci.yml)
+[![CI](https://github.com/LazyFaiz/tg-media-save/actions/workflows/ci.yml/badge.svg)](https://github.com/LazyFaiz/tg-media-save/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-1.0.1-229ed9.svg)](CHANGELOG.md)
 [![Chrome](https://img.shields.io/badge/Chrome-MV3-229ed9.svg)](https://developer.chrome.com/docs/extensions/mv3)
@@ -13,7 +13,7 @@
 
 **The download button Telegram Web is missing.**
 
-TG Media Saver saves **photos, videos, GIFs and voice messages** from
+tg-media-save saves **photos, videos, GIFs and voice messages** from
 [Telegram Web](https://web.telegram.org) (the `/k/` and `/z/` clients) — right from the chat
 feed, with real file names, in one click. One source, two distribution modes: a Tampermonkey
 userscript and a Chrome MV3 extension. Not affiliated with Telegram.
@@ -24,12 +24,12 @@ userscript and a Chrome MV3 extension. Not affiliated with Telegram.
 
 ---
 
-## What TG Media Saver does for you
+## What tg-media-save does for you
 
 You're watching a lecture in a Telegram channel. A diagram you need. A voice memo worth keeping.
 You right-click — and there's no "Save as". The channel turned it off.
 
-TG Media Saver puts the button back.
+tg-media-save puts the button back.
 
 | You want to… | You do… | You get… |
 |---|---|---|
@@ -59,13 +59,13 @@ TG Media Saver puts the button back.
 ## How it works
 
 Telegram Web serves media through its own **Service Worker** at `/k/stream/{json descriptor}`.
-TG Media Saver runs as a content script (bypassing the strict CSP), discovers the media URL, and
+tg-media-save runs as a content script (bypassing the strict CSP), discovers the media URL, and
 fetches it **in the page context** so the Service Worker serves the bytes — then streams them to
 your disk with the real file name.
 
 ```mermaid
 flowchart LR
-  User["You click ⬇"] --> Script["TG Media Saver<br/>(content script)"]
+  User["You click ⬇"] --> Script["tg-media-save<br/>(content script)"]
   Script -->|"page.fetch (page context)"| SW["Telegram Service Worker"]
   SW -->|"MTProto"| CDN[("Telegram CDN / DC")]
   CDN -->|"media bytes"| Script
@@ -79,7 +79,7 @@ Full details, ASCII diagrams and the build pipeline: [`docs/ARCHITECTURE.md`](do
 ## Demo
 
 A video post in a Telegram Web channel — the address bar shows `web.telegram.org/k/…`.
-TG Media Saver adds a ⬇ button right on the media in the feed; click it to save the file with
+tg-media-save adds a ⬇ button right on the media in the feed; click it to save the file with
 its real name. No separate app — it runs right in your browser.
 
 ![The ⬇ save button appears on a video in the Telegram Web feed](docs/assets/demo-button.png)
@@ -92,7 +92,7 @@ its real name. No separate app — it runs right in your browser.
 
 No git, no build, no Tampermonkey.
 
-1. Download [`tg-media-saver-extension.zip`](https://github.com/eiler2005/tg-media-saver/raw/main/dist/tg-media-saver-extension.zip)
+1. Download [`tg-media-save-extension.zip`](https://github.com/LazyFaiz/tg-media-save/raw/main/dist/tg-media-save-extension.zip)
    and unzip it.
 2. Open `chrome://extensions` and enable **Developer mode** (top-right).
 3. Click **Load unpacked** and select the **unzipped folder** (the one with `manifest.json`).
@@ -106,7 +106,7 @@ No git, no build, no Tampermonkey.
 1. Install [Tampermonkey](https://www.tampermonkey.net/) or [Violentmonkey](https://violentmonkey.github.io/).
 2. **Chrome (MV3):** enable Tampermonkey's **"Allow user scripts"** in `chrome://extensions`.
 3. Install — **one click:** open
-   [`tg-media-saver.user.js`](https://raw.githubusercontent.com/eiler2005/tg-media-saver/main/tg-media-saver.user.js);
+   [`tg-media-save.user.js`](https://raw.githubusercontent.com/LazyFaiz/tg-media-save/main/tg-media-save.user.js);
    or **manually:** paste its contents into a new script.
 4. Hard-reload Telegram (Cmd/Ctrl+Shift+R).
 
@@ -150,7 +150,7 @@ Console helpers: `tgSaver.status()`, `tgSaver.downloadLast()`, `tgSaver.debug(tr
 
 ## Contributing
 
-Bug reports and ideas — in [Issues](https://github.com/eiler2005/tg-media-saver/issues).
+Bug reports and ideas — in [Issues](https://github.com/LazyFaiz/tg-media-save/issues).
 PRs welcome: edit [`src/content.js`](src/content.js), run `./scripts/build.sh`, and make sure
 `npm test` passes.
 

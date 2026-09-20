@@ -1,6 +1,6 @@
 # Architecture
 
-How **TG Media Saver** is built. For installation and usage see the [README](../README.md); for
+How **tg-media-save** is built. For installation and usage see the [README](../README.md); for
 agent/developer conventions see [AGENTS.md](../AGENTS.md).
 
 ## Two modes, one source
@@ -10,7 +10,7 @@ The same logic ships as a userscript and as a Chrome extension. Both run the sin
 by running as a content script (never injected into the page world as an inline `<script>`).
 
 ```
-                          TG Media Saver
+                          tg-media-save
             ┌──────────────────────┴──────────────────────┐
             │                                             │
    Mode 1: Userscript                          Mode 2: Chrome Extension
@@ -97,11 +97,11 @@ written file is not left locked on disk.
    + src/content.js                            │
         │                                      ▼
         ▼                            extension/content.js
-   tg-media-saver.user.js                      +  manifest.json
+   tg-media-save.user.js                      +  manifest.json
    → install into Tampermonkey                 +  popup.html/.css + icons/
         │                                      │
         │                                      ▼  zip
-        │                            dist/tg-media-saver-extension.zip
+        │                            dist/tg-media-save-extension.zip
         │                            → load unpacked / distribute
         └─ version injected from manifest (__VERSION__ replaced)
 ```
@@ -116,9 +116,9 @@ Needs `bash`, `python3`, `zip` (for icons, `uv`):
 
 Output:
 
-- `tg-media-saver.user.js` — userscript (version injected from `extension/manifest.json`);
+- `tg-media-save.user.js` — userscript (version injected from `extension/manifest.json`);
 - `extension/content.js` — copy of `src/content.js` for the extension;
-- `dist/tg-media-saver-extension.zip` — store-ready zip (manifest at the archive root).
+- `dist/tg-media-save-extension.zip` — store-ready zip (manifest at the archive root).
 
 Icons (if you change the design in [`assets/icon.svg`](../assets/icon.svg) or
 [`scripts/make_icons.py`](../scripts/make_icons.py)):
@@ -128,7 +128,7 @@ uv run --with pillow python scripts/make_icons.py
 ```
 
 > After editing `src/content.js`, always run `./scripts/build.sh` to refresh
-> `tg-media-saver.user.js` and `extension/content.js` (they are generated files, committed for
+> `tg-media-save.user.js` and `extension/content.js` (they are generated files, committed for
 > raw-URL install and unpacked loading without a build step).
 
 ## Console helpers
@@ -142,13 +142,13 @@ Exposed on the page window (`page.tgSaver`):
 ## Project structure
 
 ```
-tg-media-saver/
+tg-media-save/
 ├── README.md / README.ru.md   # hero pages (EN / RU)
 ├── AGENTS.md                  # context for developers and AI agents
 ├── LICENSE · CHANGELOG.md
 ├── package.json               # npm test / npm run build (no runtime deps)
 ├── .gitignore · .gitattributes · .editorconfig
-├── tg-media-saver.user.js     # generated userscript (install into Tampermonkey)
+├── tg-media-save.user.js     # generated userscript (install into Tampermonkey)
 ├── src/
 │   ├── content.js             # SINGLE source of logic
 │   └── userscript.meta.js     # userscript header (template with __VERSION__)

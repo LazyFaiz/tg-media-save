@@ -1,14 +1,14 @@
 // ==UserScript==
-// @name         TG Media Saver
-// @name:ru      TG Media Saver — сохранение медиа из Telegram Web
-// @namespace    tg-media-save-local
+// @name         tg-media-save
+// @name:ru      tg-media-save — сохранение медиа из Telegram Web
+// @namespace    https://github.com/LazyFaiz/tg-media-save
 // @version      1.0.2
 // @description  Save photos, videos, GIFs and voice messages from Telegram Web — including channels with "restrict saving content" enabled.
 // @description:ru  Сохраняйте фото, видео, GIF и голосовые из Telegram Web — в том числе из каналов с запретом сохранения контента.
 // @author       Denis Ermilov
 // @license      MIT
-// @homepage     https://github.com/eiler2005/tg-media-saver
-// @supportURL   https://github.com/eiler2005/tg-media-saver/issues
+// @homepage     https://github.com/LazyFaiz/tg-media-save
+// @supportURL   https://github.com/LazyFaiz/tg-media-save/issues
 // @match        https://web.telegram.org/*
 // @match        https://webk.telegram.org/*
 // @match        https://webz.telegram.org/*
@@ -17,7 +17,7 @@
 // ==/UserScript==
 
 /*
- * TG Media Saver — original code by Denis Ermilov (MIT).
+ * tg-media-save — original code by Denis Ermilov (MIT).
  *
  * Single source of truth for BOTH distribution modes:
  *   - Tampermonkey/Violentmonkey userscript (isolated world, `@grant unsafeWindow`)
@@ -44,7 +44,7 @@
   "use strict";
 
   const page = typeof unsafeWindow !== "undefined" && unsafeWindow ? unsafeWindow : window;
-  const TAG = "[TG Media Saver]";
+  const TAG = "[tg-media-save]";
   const POLL_MS = 600;
   let verbose = false;
 

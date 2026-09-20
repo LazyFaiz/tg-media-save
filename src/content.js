@@ -1,5 +1,5 @@
 /*
- * TG Media Saver — original code by Denis Ermilov (MIT).
+ * tg-media-save — original code by Denis Ermilov (MIT).
  *
  * Single source of truth for BOTH distribution modes:
  *   - Tampermonkey/Violentmonkey userscript (isolated world, `@grant unsafeWindow`)
@@ -26,7 +26,7 @@
   "use strict";
 
   const page = typeof unsafeWindow !== "undefined" && unsafeWindow ? unsafeWindow : window;
-  const TAG = "[TG Media Saver]";
+  const TAG = "[tg-media-save]";
   const POLL_MS = 600;
   let verbose = false;
 

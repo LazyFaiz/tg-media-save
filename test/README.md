@@ -1,6 +1,6 @@
 # Tests
 
-TG Media Saver is tested with **Node's built-in test runner** — no dependencies.
+tg-media-save is tested with **Node's built-in test runner** — no dependencies.
 
 ```bash
 npm test          # or: node --test test/*.test.js

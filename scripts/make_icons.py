@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate TG Media Saver PNG icons from scratch using Pillow.
+"""Generate tg-media-save PNG icons from scratch using Pillow.
 
 Run without polluting the global environment (uv is ephemeral):
 

@@ -1,4 +1,4 @@
-# AGENTS.md — TG Media Saver
+# AGENTS.md — tg-media-save
 
 Instructions and context for AI coding agents (and human developers) working in this repository.
 
@@ -11,7 +11,7 @@ derivative of any existing script. Not affiliated with Telegram.
 
 It ships in **two distribution modes from a single source of truth**:
 
-1. **Userscript** (Tampermonkey / Violentmonkey) — `tg-media-saver.user.js`.
+1. **Userscript** (Tampermonkey / Violentmonkey) — `tg-media-save.user.js`.
 2. **Chrome MV3 extension** — `extension/` (loaded unpacked or zipped for the store).
 
 ## Start here
@@ -90,7 +90,7 @@ extension/manifest.json    # MV3 manifest (icons, action+popup, MAIN-world conte
 extension/content.js       # GENERATED copy of src/content.js (do not edit by hand).
 extension/popup.html/.css  # Toolbar help popup (static; no inline JS — MV3 forbids it).
 extension/icons/*.png      # GENERATED icons (16/48/128).
-tg-media-saver.user.js     # GENERATED userscript (header + content). Installable via raw URL.
+tg-media-save.user.js     # GENERATED userscript (header + content). Installable via raw URL.
 assets/icon.svg            # Vector icon source (design reference).
 assets/icon128.png,512.png # GENERATED store/promo icons.
 scripts/build.sh           # Build: userscript + extension/content.js + dist zip.
@@ -151,7 +151,7 @@ Before submitting changes, all of these must pass:
 
 ## Conventions & invariants
 
-- **Edit `src/content.js`, never the generated files** (`tg-media-saver.user.js`,
+- **Edit `src/content.js`, never the generated files** (`tg-media-save.user.js`,
   `extension/content.js`). Run `./scripts/build.sh` after editing so generated files stay in
   sync. Commit the regenerated files (they are tracked for convenience / raw-URL install).
 - Keep the version in `extension/manifest.json`; the build propagates it. Bump it in
@@ -188,5 +188,5 @@ README → Troubleshooting. Do not try to "fix" this in the content script.
 ## Git
 
 - Stage explicitly; no `git add -A`. Do not commit secrets (there are none in this project).
-- `dist/` is gitignored. Generated `tg-media-saver.user.js` and `extension/content.js` ARE
+- `dist/` is gitignored. Generated `tg-media-save.user.js` and `extension/content.js` ARE
   committed (intentionally, for raw-URL install and unpacked loading without a build step).
