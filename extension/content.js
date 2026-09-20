@@ -93,7 +93,27 @@
     document.body.appendChild(a);
     a.click();
     a.remove();
-    page.URL.revokeObjectURL(u);
+    setTimeout(() => page.URL.revokeObjectURL(u), 30000);
+  };
+
+  const CHUNK_SIZE = 1024 * 1024;
+  // Retry the body read too: a connection can drop after headers arrive.
+  const fetchChunk = async (url, options) => {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        const res = await page.fetch(url, options);
+        if (res.status !== 200 && res.status !== 206) {
+          const error = new Error(`HTTP ${res.status}`);
+          error.retryable = [408, 429, 500, 502, 503, 504].includes(res.status);
+          throw error;
+        }
+        return { res, chunk: await res.blob() };
+      } catch (error) {
+        const retryable = error && (error.name === "TypeError" || error.retryable);
+        if (!retryable || attempt >= 2) throw error;
+        await new Promise((resolve) => setTimeout(resolve, 500 * 2 ** attempt));
+      }
+    }
   };
 
   // Download a media URL. Uses the File System Access API when available (real file name +
@@ -104,7 +124,13 @@
 
     // Single-shot sources (MSE blob / data URI) have no Range support.
     if (/^(blob:|data:)/.test(url)) {
-      const blob = await (await page.fetch(url)).blob();
+      let blob;
+      try {
+        ({ chunk: blob } = await fetchChunk(url));
+      } catch (error) {
+        if (!url.startsWith("blob:")) throw error;
+        throw new Error("This blob URL is expired or belongs to MediaSource and cannot be fetched as a file. Reopen the media and try again; playback alone does not make a MediaSource URL downloadable.", { cause: error });
+      }
       const finalName = withExt(name, blob.type);
       saveBlob(blob, finalName);
       return finalName;
@@ -128,14 +154,22 @@
 
     try {
       for (;;) {
-        const res = await page.fetch(url, { headers: { Range: `bytes=${offset}-` } });
-        if (res.status !== 200 && res.status !== 206) throw new Error(`HTTP ${res.status}`);
+        const endRequested = offset + CHUNK_SIZE - 1;
+        const { res, chunk } = await fetchChunk(url, {
+          headers: { Range: `bytes=${offset}-${endRequested}` },
+        });
         mime = (res.headers.get("Content-Type") || mime).split(";")[0];
 
         const range = res.headers.get("Content-Range");
-        const chunk = await res.blob();
 
-        if (!range) {
+        if (res.status === 200) {
+          if (meta && meta.size && chunk.size !== meta.size) {
+            throw new Error("Incomplete whole-file response; reopen the media and retry.");
+          }
+          if (writable && offset) {
+            await writable.seek(0);
+            await writable.truncate(0);
+          }
           // Server ignored Range and sent the whole file at once.
           const finalName = withExt(name, mime);
           if (writable) {
@@ -149,10 +183,17 @@
           return finalName;
         }
 
-        const m = /bytes (\d+)-(\d+)\/(\d+)/.exec(range);
+        const m = /^bytes (\d+)-(\d+)\/(\d+)$/.exec(range || "");
         if (!m) throw new Error(`Malformed Content-Range header: ${range}`);
         const end = Number(m[2]);
-        total = Number(m[3]);
+        const nextTotal = Number(m[3]);
+        if (![Number(m[1]), end, nextTotal].every(Number.isSafeInteger) ||
+            Number(m[1]) !== offset || end < offset || end >= nextTotal ||
+            chunk.size !== end - offset + 1 || (total !== null && total !== nextTotal) ||
+            (meta && meta.size && meta.size !== nextTotal)) {
+          throw new Error("Invalid or incomplete Content-Range response; reopen the media and retry.");
+        }
+        total = nextTotal;
 
         if (end + 1 <= offset) throw new Error("Download stalled: server did not advance the offset");
 
@@ -181,13 +222,13 @@
   // ---------- capture ----------
   const state = { last: null };
 
-  const mediaUrl = (el) => el && (el.currentSrc || el.getAttribute("data-tgs-src") || el.src || "");
+  const mediaUrl = (el) => el && (el.currentSrc || el.src || el.getAttribute("data-tgs-src") || "");
 
   const capture = () => {
     document.querySelectorAll("video, audio").forEach((el) => {
       const url = mediaUrl(el);
       if (!url || url.startsWith("data:")) return;
-      if (!el.getAttribute("data-tgs-src")) {
+      if (el.getAttribute("data-tgs-src") !== url) {
         el.setAttribute("data-tgs-src", url);
         state.last = { url, kind: el.tagName === "AUDIO" ? "audio" : "video", meta: describeStream(url) };
         log("captured", el.tagName, state.last.meta ? state.last.meta.name : url);
@@ -243,14 +284,15 @@
         return;
       }
       fail("download failed:", err && err.message ? err.message : err);
-      fail(
-        "Hint: if the video also won't PLAY, Telegram's Service Worker isn't serving bytes " +
-          "(look for 'FetchEvent … rejected' / 'ERR_NETWORK_CHANGED'). Stabilize the network, close " +
-          "other web.telegram.org tabs, hard-reload; if needed DevTools → Application → Service Workers " +
-          "→ Unregister → reload (do NOT enable 'Bypass for network')."
-      );
+      if (err && err.name === "TypeError") {
+        info("Network request failed after retries. Reopen the media to refresh its URL. " +
+          "If playback also fails, restore the network and reload Telegram. " +
+          "Do not enable Service Worker 'Bypass for network'.");
+      }
       if (floatCap) {
-        floatCap.textContent = "⚠ error (see console)";
+        floatCap.textContent = `⚠ ${err.message || "Download failed"}`;
+        floatCap.title = floatCap.textContent;
+        floatCap.style.display = "block";
         setTimeout(refreshFloating, 3000);
       }
     }

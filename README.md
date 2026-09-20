@@ -1,5 +1,7 @@
 # TG Media Saver
 
+> Local fork 1.0.2: see [中文安装与修复说明](README.zh-CN.md). Build locally with `npm run build` (Node.js + Python 3). Upstream download links below do not include these fixes.
+
 ![TG Media Saver — save photos, videos, GIFs and voice messages from Telegram Web](docs/assets/hero-banner.png)
 
 [![CI](https://github.com/eiler2005/tg-media-saver/actions/workflows/ci.yml/badge.svg)](https://github.com/eiler2005/tg-media-saver/actions/workflows/ci.yml)

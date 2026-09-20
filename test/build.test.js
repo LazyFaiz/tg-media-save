@@ -12,7 +12,7 @@ const read = (p) => fs.readFileSync(path.join(ROOT, p), "utf8");
 const exists = (p) => fs.existsSync(path.join(ROOT, p));
 
 test("build.sh succeeds and produces all artifacts", () => {
-  execSync("./scripts/build.sh", { cwd: ROOT, stdio: "pipe" });
+  execSync("python scripts/build.py", { cwd: ROOT, stdio: "pipe" });
   assert.ok(exists("tg-media-saver.user.js"), "userscript");
   assert.ok(exists("extension/content.js"), "extension content script");
   assert.ok(exists("dist/tg-media-saver-extension.zip"), "store zip");

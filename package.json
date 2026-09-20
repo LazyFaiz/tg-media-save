@@ -1,13 +1,13 @@
 {
-  "name": "tg-media-saver",
-  "version": "1.0.0",
+  "name": "tg-media-save",
+  "version": "1.0.2",
   "private": true,
   "engines": {
     "node": ">=18"
   },
   "description": "Save photos, videos, GIFs and voice messages from Telegram Web (userscript + Chrome MV3 extension).",
   "scripts": {
-    "build": "./scripts/build.sh",
+    "build": "python scripts/build.py",
     "test": "node --test test/*.test.js"
   },
   "license": "MIT",

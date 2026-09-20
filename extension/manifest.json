@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "TG Media Saver",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "minimum_chrome_version": "111",
   "description": "Save photos, videos, GIFs and voice messages from Telegram Web, including channels with restricted saving.",
   "author": "Denis Ermilov",
@@ -27,7 +27,9 @@
         "https://webk.telegram.org/*",
         "https://webz.telegram.org/*"
       ],
-      "js": ["content.js"],
+      "js": [
+        "content.js"
+      ],
       "run_at": "document_start",
       "world": "MAIN"
     }

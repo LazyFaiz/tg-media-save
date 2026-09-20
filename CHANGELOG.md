@@ -1,3 +1,11 @@
+# 1.0.2 (local fork)
+
+- Retry transient fetch/body failures with bounded backoff.
+- Bound Range requests and validate byte ranges and lengths before saving.
+- Reset partial disk output when a server returns the full file.
+- Refresh reused media URLs and improve failure diagnostics.
+- Add a portable Python build and local installation guide.
+
 # Changelog
 
 All notable changes to **TG Media Saver** are documented here.

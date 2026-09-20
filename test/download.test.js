@@ -53,7 +53,7 @@ test("download: assembles a file from Range chunks", async () => {
     fetchImpl: async (url, opts) => {
       const range = opts.headers.Range;
       calls.push(range);
-      const start = Number(range.replace("bytes=", "").replace("-", ""));
+      const start = Number(range.match(/^bytes=(\d+)-/)[1]);
       if (start === 0) {
         return res(206, { "content-type": "video/mp4", "content-range": "bytes 0-49/100" }, "a".repeat(50));
       }
@@ -69,7 +69,7 @@ test("download: assembles a file from Range chunks", async () => {
   const name = await download(url, (p) => progress.push(p));
 
   assert.equal(name, "movie.mp4");
-  assert.deepEqual(calls, ["bytes=0-", "bytes=50-"]);
+  assert.deepEqual(calls, ["bytes=0-1048575", "bytes=50-1048625"]);
   assert.deepEqual(progress, [0.5, 1]);
 
   const a = lastAnchor();
@@ -148,7 +148,7 @@ function setupWritable() {
 test("download: streams Range chunks to disk via the File System Access API", async () => {
   setupPage({
     fetchImpl: async (url, opts) => {
-      const start = Number(opts.headers.Range.replace("bytes=", "").replace("-", ""));
+      const start = Number(opts.headers.Range.match(/^bytes=(\d+)-/)[1]);
       if (start === 0) {
         return res(206, { "content-type": "video/mp4", "content-range": "bytes 0-49/100" }, "a".repeat(50));
       }
@@ -176,7 +176,7 @@ test("download: streams Range chunks to disk via the File System Access API", as
 test("download: aborts the writable when a chunk fetch fails", async () => {
   setupPage({
     fetchImpl: async (url, opts) => {
-      const start = Number(opts.headers.Range.replace("bytes=", "").replace("-", ""));
+      const start = Number(opts.headers.Range.match(/^bytes=(\d+)-/)[1]);
       if (start === 0) {
         return res(206, { "content-type": "video/mp4", "content-range": "bytes 0-49/100" }, "a".repeat(50));
       }
@@ -191,4 +191,51 @@ test("download: aborts the writable when a chunk fetch fails", async () => {
   assert.equal(writes.length, 1, "first chunk written before the failure");
   assert.equal(state.aborted, true, "writable aborted on error");
   assert.equal(state.closed, false, "writable not closed on error");
+});
+
+test("download: retries a failed body at the same offset", async () => {
+  const calls = [];
+  setupPage({ fetchImpl: async (url, opts) => {
+    calls.push(opts.headers.Range);
+    if (calls.length === 1) return { status: 206, blob: async () => { throw new TypeError('Failed to fetch'); } };
+    return res(206, { 'content-range': 'bytes 0-2/3' }, 'abc');
+  }});
+  await download(streamUrl({ fileName: 'retry.bin', size: 3 }));
+  assert.deepEqual(calls, ['bytes=0-1048575', 'bytes=0-1048575']);
+});
+
+test("download: persistent network failure is bounded and aborts output", async () => {
+  let calls = 0;
+  setupPage({ fetchImpl: async () => { calls++; throw new TypeError('Failed to fetch'); }});
+  const { state, writes } = setupWritable();
+  await assert.rejects(download(streamUrl({ size: 3 })), /Failed to fetch/);
+  assert.equal(calls, 3);
+  assert.equal(state.aborted, true);
+  assert.equal(writes.length, 0);
+});
+
+for (const [range, body] of [['bytes 1-3/4', 'abc'], ['bytes 0-3/4', 'ab'], [null, 'abc']]) {
+  test(`download: rejects invalid partial response ${range}`, async () => {
+    setupPage({ fetchImpl: async () => res(206, { 'content-range': range }, body) });
+    const { state } = setupWritable();
+    await assert.rejects(download(streamUrl({ size: 4 })), /Content-Range/);
+    assert.equal(state.aborted, true);
+    assert.equal(state.closed, false);
+  });
+}
+
+test("download: full response after a chunk resets disk output", async () => {
+  let count = 0;
+  setupPage({ fetchImpl: async () => ++count === 1
+    ? res(206, { 'content-range': 'bytes 0-1/4' }, 'ab')
+    : res(200, {}, 'abcd') });
+  const operations = [];
+  win.showSaveFilePicker = async () => ({ createWritable: async () => ({
+    write: async b => operations.push(['write', b.size]),
+    seek: async n => operations.push(['seek', n]),
+    truncate: async n => operations.push(['truncate', n]),
+    close: async () => operations.push(['close']), abort: async () => {}
+  }) });
+  await download(streamUrl({ size: 4 }));
+  assert.deepEqual(operations, [['write', 2], ['seek', 0], ['truncate', 0], ['write', 4], ['close']]);
 });
