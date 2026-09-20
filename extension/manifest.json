@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "tg-media-save",
+  "name": "TG Media Save",
   "version": "1.0.2",
   "minimum_chrome_version": "111",
   "description": "Save photos, videos, GIFs and voice messages from Telegram Web, including channels with restricted saving.",
@@ -12,7 +12,7 @@
     "128": "icons/icon128.png"
   },
   "action": {
-    "default_title": "tg-media-save",
+    "default_title": "TG Media Save",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",

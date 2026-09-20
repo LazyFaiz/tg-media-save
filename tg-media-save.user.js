@@ -1,6 +1,6 @@
 // ==UserScript==
-// @name         tg-media-save
-// @name:ru      tg-media-save — сохранение медиа из Telegram Web
+// @name         TG Media Save
+// @name:ru      TG Media Save — сохранение медиа из Telegram Web
 // @namespace    https://github.com/LazyFaiz/tg-media-save
 // @version      1.0.2
 // @description  Save photos, videos, GIFs and voice messages from Telegram Web — including channels with "restrict saving content" enabled.

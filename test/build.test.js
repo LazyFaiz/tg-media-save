@@ -23,7 +23,7 @@ test("userscript has a valid header with the manifest version injected", () => {
   const us = read("tg-media-save.user.js");
   assert.match(us, /^\/\/ ==UserScript==/);
   assert.match(us, /\/\/ ==\/UserScript==/);
-  assert.ok(us.includes("@name         tg-media-save"));
+  assert.ok(us.includes("@name         TG Media Save"));
   assert.ok(us.includes(`@version      ${manifest.version}`), "version must match manifest");
   assert.ok(!us.includes("__VERSION__"), "version placeholder must be replaced");
 });
