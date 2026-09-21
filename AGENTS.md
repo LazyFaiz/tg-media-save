@@ -21,6 +21,11 @@ It ships in **two distribution modes from a single source of truth**:
 - Version lives in **one place**: `extension/manifest.json` → `version`. The build injects it
   into the userscript header.
 
+## Documentation languages
+
+- `README.md` is the Chinese repository homepage; `README.en.md` is its English counterpart. Keep section order, commands, limits and version information aligned.
+- `README.zh-CN.md` preserves the old link and points to the Chinese homepage.
+
 ## Current integration notes (1.0.5)
 
 - Installed display name: **TG Media Save**; repository/artifact names: `tg-media-save`.
@@ -106,7 +111,7 @@ test/                      # Node built-in tests (unit, download engine, content
 test/helpers.js            # DOM shim so src/content.js loads in Node.
 package.json               # `npm test` / `npm run build` (no runtime deps).
 .github/workflows/ci.yml   # GitHub Actions: npm test on push/PR.
-README.md / README.ru.md   # User docs (English base + Russian).
+README.md / README.en.md / README.ru.md # User docs (Chinese home + English + Russian).
 dist/                      # Build output (gitignored).
 ```
 

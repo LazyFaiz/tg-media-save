@@ -1,7 +1,7 @@
 # Troubleshooting
 
 Installed extension name: **TG Media Save**. Current version: **1.0.5**.
-See the [Chinese guide](../README.zh-CN.md) for installation and diagnosis.
+See the [Chinese guide](../README.md) for installation and diagnosis.
 
 ## Update first
 

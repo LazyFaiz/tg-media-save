@@ -1,169 +1,89 @@
-# tg-media-save
+# TG Media Save
 
-> **TG Media Save 1.0.5** — [中文安装与故障排查](README.zh-CN.md). The previously failing WebK MediaSource video download was confirmed working by the user on 2026-09-21. 49 automated tests pass.
+**简体中文** | [English](README.en.md) | [Русский](README.ru.md)
 
-![tg-media-save — save photos, videos, GIFs and voice messages from Telegram Web](docs/assets/hero-banner.png)
+项目仓库：[LazyFaiz/tg-media-save](https://github.com/LazyFaiz/tg-media-save)。安装后的扩展名称为 **TG Media Save**，项目和发行文件使用 `tg-media-save`。
 
-[![CI](https://github.com/LazyFaiz/tg-media-save/actions/workflows/ci.yml/badge.svg)](https://github.com/LazyFaiz/tg-media-save/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.0.5-229ed9.svg)](CHANGELOG.md)
-[![Chrome](https://img.shields.io/badge/Chrome-MV3-229ed9.svg)](https://developer.chrome.com/docs/extensions/mv3)
+基于 [eiler2005/tg-media-saver](https://github.com/eiler2005/tg-media-saver)，保留原作者署名与 [MIT 许可证](LICENSE)。仅保存当前账号可访问且你有权保存的内容；不发送消息，不收集数据。
 
-**Русский → [README.ru.md](./README.ru.md)**
+## 功能
 
-**The download button Telegram Web is missing.**
+为 Telegram Web 的图片、视频、GIF 和语音提供下载按钮。提供 Chrome / Edge MV3 扩展和 Tampermonkey / Violentmonkey 用户脚本，共用一份源码。项目与 Telegram 无隶属关系。
 
-tg-media-save saves **photos, videos, GIFs and voice messages** from
-[Telegram Web](https://web.telegram.org) (the `/k/` and `/z/` clients) — right from the chat
-feed, with real file names, in one click. One source, two distribution modes: a Tampermonkey
-userscript and a Chrome MV3 extension. Not affiliated with Telegram.
+- 媒体旁的下载按钮，以及左下角用于保存最近捕获媒体的悬浮按钮。
+- 从有效文档描述中读取文件名和大小；普通 Blob 使用自动生成的文件名。
+- 支持 WebK HLS / MediaSource 原始文件来源解析、分段下载及临时错误重试。
+- 不代替用户登录、发帖或发送消息，不收集数据，无运行时第三方依赖。
 
-> ⚠️ **Responsible use.** The tool only works with what your account can already see in Telegram.
-> Use it only for content you have the rights to (your own files, permitted materials). Respect
-> Telegram's Terms of Service and content owners' copyright.
+## 当前版本：1.0.5
 
----
+2026-09-21，用户在此前报错的 Telegram WebK 视频上确认可以下载。该案例使用 MediaSource 播放器，原始 HLS 地址被 `blob:` 地址覆盖；1.0.5 在覆盖前记录来源，下载对应的原始文件。
 
-## What tg-media-save does for you
+49 项自动测试通过。该实测结论针对本次视频下载案例，不代表所有客户端、媒体类型及油猴环境均已验证。
 
-You're watching a lecture in a Telegram channel. A diagram you need. A voice memo worth keeping.
-You right-click — and there's no "Save as". The channel turned it off.
+## 安装
 
-tg-media-save puts the button back.
+1. [下载扩展 ZIP](https://github.com/LazyFaiz/tg-media-save/raw/main/dist/tg-media-save-extension.zip) 并解压；也可以直接使用本仓库的 `extension/` 文件夹。
+2. 打开 Chrome 的 `chrome://extensions` 或 Edge 的 `edge://extensions`，开启开发者模式。
+3. 禁用旧版 TG Media Saver 和重复的同类脚本。
+4. 点击“加载已解压的扩展程序”，选择包含 `manifest.json` 的文件夹。
+5. **刷新 Telegram 网页，再重新打开并播放视频**，点击媒体旁的下载按钮。
 
-| You want to… | You do… | You get… |
-|---|---|---|
-| Save a video from the feed | Click ⬇ on the video | The original file, real name, streamed straight to disk |
-| Keep a voice message | Click ⬇ on the audio | The `.ogg` file |
-| Grab a photo or GIF | Click ⬇ on the image | The full-resolution image |
-| Save the last thing you played | Click the floating ⬇ (bottom-left) | Whatever media the page loaded last |
+油猴版本使用 [tg-media-save.user.js](tg-media-save.user.js)，与扩展二选一。当前脚本没有显式 `@updateURL` / `@downloadURL`，升级时请重新安装本仓库版本，不依赖自动更新。
 
-### What it will not do — by design
+## 使用
 
-- **Post, vote, comment, or log in as you.** It is strictly read-only.
-- **Collect or send any data anywhere.** Everything happens locally in your browser.
-- **Ask for permissions** beyond running on `web.telegram.org`.
+1. 打开 Telegram Web，播放视频或音频，或打开图片，让页面加载媒体。
+2. 点击媒体旁的下载按钮，或左下角用于保存最近捕获媒体的悬浮按钮。
+3. 若浏览器显示保存对话框，选择保存位置，等待下载完成。
 
----
+请遵守 Telegram 使用条款及内容所有者的版权要求。
 
-## Features
+## 升级
 
-- ⬇ inline save buttons on feed media, plus a floating ⬇ for the last loaded media.
-- Real file **names and sizes**, parsed from Telegram's stream descriptor.
-- Large files stream **straight to disk** (File System Access API), with an in-memory fallback.
-- Bypasses Telegram's strict Content-Security-Policy (content-script injection, not page-world).
-- **No telemetry, no accounts, no dependencies** at runtime. MIT-licensed.
+1. 获取最新代码或安装包，更新浏览器实际加载的文件夹。
+2. 在扩展管理页重新加载 **TG Media Save**，确认版本为 **1.0.5**。
+3. **刷新 Telegram 页面，然后重新打开视频**。只重新加载扩展无法捕获旧页面已经创建的媒体来源。
+4. 播放后点击下载。
 
----
+## 下载机制与限制
 
-## How it works
+- WebK HLS / MediaSource：按媒体元素记录原始地址，将有效的同源 HLS 文档地址转换为 stream 请求，不用最近一次网络请求猜测视频。
+- 普通 Blob：捕获创建时的文件引用，支持保存地址后来被撤销的文件。缓存最多 32 项、合计 512 MiB，每项保留五分钟；超限淘汰旧项，超大文件不缓存。
+- 分段下载：每次最多请求 1 MiB，临时网络错误最多尝试三次，并校验范围、字节数和总长度。
+- 支持 File System Access API 时分段写入磁盘，否则在内存中组装文件。普通 Blob 保存使用浏览器下载。
+- MediaSource 不是普通文件；若未捕获原始地址，不能直接下载其 blob。播放器实现变化也可能影响适配。
 
-Telegram Web serves media through its own **Service Worker** at `/k/stream/{json descriptor}`.
-tg-media-save runs as a content script (bypassing the strict CSP), discovers the media URL, and
-fetches it **in the page context** so the Service Worker serves the bytes — then streams them to
-your disk with the real file name.
+## 故障排查
 
-```mermaid
-flowchart LR
-  User["You click ⬇"] --> Script["tg-media-save<br/>(content script)"]
-  Script -->|"page.fetch (page context)"| SW["Telegram Service Worker"]
-  SW -->|"MTProto"| CDN[("Telegram CDN / DC")]
-  CDN -->|"media bytes"| Script
-  Script -->|"File System Access"| Disk[("Your disk<br/>real file name")]
+先确认页面已刷新、视频已重新打开。若仍失败，在 **Telegram 网页**的开发者工具 Console 运行：
+
+```js
+JSON.stringify(tgSaver.diagnose())
 ```
 
-Full details, ASCII diagrams and the build pipeline: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+输出含版本、捕获功能状态、缓存大小及媒体来源类型，不含完整媒体 URL 或消息内容。
 
----
-
-## Demo
-
-A video post in a Telegram Web channel — the address bar shows `web.telegram.org/k/…`.
-tg-media-save adds a ⬇ button right on the media in the feed; click it to save the file with
-its real name. No separate app — it runs right in your browser.
-
-![The ⬇ save button appears on a video in the Telegram Web feed](docs/assets/demo-button.png)
-
----
-
-## Install
-
-### Mode 1 — Chrome extension: download & load unpacked (easiest)
-
-No git, no build, no Tampermonkey.
-
-1. Download [`tg-media-save-extension.zip`](https://github.com/LazyFaiz/tg-media-save/raw/main/dist/tg-media-save-extension.zip)
-   and unzip it.
-2. Open `chrome://extensions` and enable **Developer mode** (top-right).
-3. Click **Load unpacked** and select the **unzipped folder** (the one with `manifest.json`).
-4. Hard-reload Telegram (Cmd/Ctrl+Shift+R).
-
-> Chrome may show a "Disable developer mode extensions" notice on launch — normal for unpacked
-> extensions; just dismiss it (keep Developer mode on).
-
-### Mode 2 — Userscript (Tampermonkey / Violentmonkey)
-
-1. Install [Tampermonkey](https://www.tampermonkey.net/) or [Violentmonkey](https://violentmonkey.github.io/).
-2. **Chrome (MV3):** enable Tampermonkey's **"Allow user scripts"** in `chrome://extensions`.
-3. Install — **one click:** open
-   [`tg-media-save.user.js`](https://raw.githubusercontent.com/LazyFaiz/tg-media-save/main/tg-media-save.user.js);
-   or **manually:** paste its contents into a new script.
-4. Hard-reload Telegram (Cmd/Ctrl+Shift+R).
-
-### Mode 3 — From source (for developers & contributors)
-
-To modify, inspect, or build the extension yourself — or to run the latest `main` before a
-release zip is published.
-
-1. Open `chrome://extensions` and enable **Developer mode**.
-2. Clone the repo, then click **Load unpacked** and select the [`extension/`](extension) folder
-   (the one with `manifest.json`). To rebuild from source, see
-   [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#building-from-source).
-3. Hard-reload Telegram (Cmd/Ctrl+Shift+R).
-
-> Use **one mode at a time** (otherwise the buttons duplicate). The extension is not blocked by
-> the page CSP and needs no "Allow user scripts" toggle.
-
----
-
-## Updating
-
-Update the loaded extension folder, reload **TG Media Save**, then **refresh Telegram and reopen the video**. Source capture must start before the player creates its MediaSource. For userscripts, reinstall this repository's script manually; no explicit auto-update URLs are configured.
-
-## Usage
-
-1. **Play** the video/audio (or open the photo) so the page loads the media.
-2. Click ⬇ **on the media** — or the floating ⬇ bottom-left.
-3. The file saves with its real name; progress shows as a percent.
-
-For errors, run `JSON.stringify(tgSaver.diagnose())` and see [Troubleshooting](docs/TROUBLESHOOTING.md).
-
-Console helpers: `tgSaver.status()`, `tgSaver.downloadLast()`, `tgSaver.debug(true)`.
-
----
-
-## Documentation
-
-| Document | Topic |
+| 字段 | 含义 |
 |---|---|
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | How it works (diagrams), build pipeline, project structure |
-| [`test/README.md`](test/README.md) | What is tested and how (`npm test`, no dependencies) |
-| [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md) | No buttons, Service Worker errors, updating |
-| [`AGENTS.md`](AGENTS.md) | Notes for developers and AI agents |
-| [`CHANGELOG.md`](CHANGELOG.md) | Release history |
+| `sourceCaptureInstalled` | 原始来源捕获是否安装成功 |
+| `blobCaptureInstalled` | Blob / MediaSource 类型捕获是否安装成功 |
+| `sourceType: "stream"` | 已解析为文件下载地址 |
+| `capturedType: "MediaSource"` | 捕获到播放器对象，但当前没有解析到原始文件地址 |
+| `capturedType: "not-retained"` | 该地址没有缓存；对于 stream 来源属于正常情况 |
+| `readyState: 0` | 此媒体元素尚未加载，页面可能同时存在空闲元素 |
 
----
+报告问题时附上诊断输出、报错文字以及视频是否能播放。`Failed to fetch` 本身不能区分网络故障、失效 Blob 和 MediaSource。若视频也不能播放，先恢复网络并刷新 Telegram；不要启用 Service Worker 的 “Bypass for network”。详见 [故障排查](docs/TROUBLESHOOTING.md)。
 
-## Contributing
+## 开发
 
-Bug reports and ideas — in [Issues](https://github.com/LazyFaiz/tg-media-save/issues).
-PRs welcome: edit [`src/content.js`](src/content.js), run `npm run build`, and make sure
-`npm test` passes.
+需要 Node.js 18+ 和 Python 3（`python` 在 PATH 中），运行时无第三方依赖。
 
----
+```sh
+npm run build
+npm test
+```
 
-## Origin and license
+仅编辑 `src/content.js`，构建会生成扩展脚本、油猴脚本和 ZIP。版本以 `extension/manifest.json` 为准。`scripts/build.sh` 是调用 `python3 scripts/build.py` 的兼容入口。
 
-Based on [eiler2005/tg-media-saver](https://github.com/eiler2005/tg-media-saver), with the original author's attribution retained.
-
-[MIT](LICENSE) © 2026 Denis Ermilov
+[架构说明](docs/ARCHITECTURE.md) · [测试说明](test/README.md) · [更新日志](CHANGELOG.md)

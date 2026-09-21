@@ -2,7 +2,7 @@
 
 Установленное расширение: **TG Media Save 1.0.5**. После обновления перезагрузите расширение, обновите страницу Telegram и заново откройте видео. Пользователь подтвердил успешное скачивание ранее проблемного WebK-видео 2026-09-21; пройдено 49 автоматических тестов.
 
-[中文说明](README.zh-CN.md) · [Диагностика](docs/TROUBLESHOOTING.md). Для отчёта об ошибке выполните `JSON.stringify(tgSaver.diagnose())`. Userscript обновляйте вручную: явные URL автообновления не заданы.
+[中文说明](README.md) · [Диагностика](docs/TROUBLESHOOTING.md). Для отчёта об ошибке выполните `JSON.stringify(tgSaver.diagnose())`. Userscript обновляйте вручную: явные URL автообновления не заданы.
 
 ![tg-media-save — сохраняйте фото, видео, GIF и голосовые из Telegram Web](docs/assets/hero-banner.png)
 
@@ -11,7 +11,7 @@
 [![Version](https://img.shields.io/badge/version-1.0.5-229ed9.svg)](CHANGELOG.md)
 [![Chrome](https://img.shields.io/badge/Chrome-MV3-229ed9.svg)](https://developer.chrome.com/docs/extensions/mv3)
 
-**English → [README.md](./README.md)**
+**English → [README.en.md](./README.en.md)**
 
 **Та самая кнопка скачивания, которой не хватает в Telegram Web.**
 

@@ -1,6 +1,6 @@
 # Architecture
 
-**TG Media Save** ships as an MV3 extension and a userscript from [src/content.js](../src/content.js). Repository and artifact names use `tg-media-save`. Original author attribution is retained under MIT.
+**TG Media Save** ships as an MV3 extension and a userscript from [src/content.js](../src/content.js). Repository and artifact names use `tg-media-save`. Installation guides: [中文](../README.md) / [English](../README.en.md). Original author attribution is retained under MIT.
 
 ## Execution and source capture
 
