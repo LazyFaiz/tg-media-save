@@ -1,56 +1,46 @@
 # Troubleshooting
 
-If something does not work, start here. For how the tool is built see
-[ARCHITECTURE.md](./ARCHITECTURE.md).
+Installed extension name: **TG Media Save**. Current version: **1.0.5**.
+See the [Chinese guide](../README.zh-CN.md) for installation and diagnosis.
 
-## First: confirm the script is actually running
+## Update first
 
-Open DevTools → Console and filter by `tg-media-save`. On a working install you should see:
+Update the folder actually loaded by the browser, reload the extension, then **refresh Telegram and reopen the video**. Source capture starts at document startup and cannot recover assignments that already happened. Use only one extension/userscript installation.
 
+For source changes run `npm run build` (Node.js and Python 3). Reinstall the generated userscript manually; this fork has no explicit `@updateURL` or `@downloadURL`.
+
+## No buttons
+
+Check that the extension is enabled and loaded from the folder containing `manifest.json`. The manifest requires Chrome/Chromium 111+. Userscript users should check their manager is enabled and its browser user-script permission is allowed. Refresh Telegram after installation.
+
+## Playback works, but blob download fails
+
+`Failed to fetch` or `ERR_FILE_NOT_FOUND` does not by itself prove a network or Service Worker fault. A blob URL can refer to a revoked file Blob or to a MediaSource player, which is not a file.
+
+Version 1.0.5 records WebK's per-element HLS source before the player overwrites it with a MediaSource blob. The user confirmed successful downloading of the previously failing WebK video on 2026-09-21. Other videos, clients and userscript environments are not implied to be verified.
+
+Ordinary file Blobs are retained separately: at most 32 entries, 512 MiB total, and five minutes per entry. Oversized Blobs are not cached. This does not change Telegram's own URL revocation behavior.
+
+## Collect diagnostics
+
+In the Telegram page's DevTools Console run:
+
+```js
+JSON.stringify(tgSaver.diagnose())
 ```
-[tg-media-save] ready — play a video/audio, then press ⬇ (inline or bottom-left).
-```
 
-If there is **no** `[tg-media-save]` line at all, the script is not running — see below.
+Include this output, the error text and whether playback works in a bug report. Diagnostics contain version, hook availability, source categories and sizes, not complete media URLs or message contents.
 
-## No buttons / no `[tg-media-save]` logs
+- `sourceCaptureInstalled`: the per-element source setter hook was installed.
+- `blobCaptureInstalled`: the object URL capture hook was installed.
+- `sourceType: "stream"`: a file source was resolved; `capturedType: "not-retained"` is normal for this path.
+- `capturedType: "MediaSource"` with `sourceType: "blob"`: no original file URL was resolved for this player.
+- `readyState: 0`: an unloaded element; idle elements can coexist with a playing video.
 
-**Userscript:**
-- Is the script **enabled** in Tampermonkey / Violentmonkey?
-- On Chrome (Manifest V3): is Tampermonkey's **"Allow user scripts"** toggle enabled
-  (`chrome://extensions` → Tampermonkey)? Without it, userscripts silently do not run.
-- Hard-reload the Telegram tab (Cmd/Ctrl+Shift+R) after installing or editing.
+Hook installation alone does not prove that a particular source was captured. Reloading the page and reopening the video are required after upgrades.
 
-**Extension:**
-- Is the extension **enabled** in `chrome://extensions`?
-- Chrome/Chromium **111+** is required (the manifest declares `minimum_chrome_version: "111"`
-  for the MAIN-world content script).
-- Did you load the folder that contains `manifest.json` (the `extension/` folder)?
+## Playback also fails
 
-## The button appears but nothing downloads
+Restore the network/VPN and refresh Telegram. If Service Worker errors persist, close other Telegram tabs and retry. Do not enable **Bypass for network**: Telegram's stream endpoint relies on its Service Worker. This extension does not reset sessions or repair Telegram's transport.
 
-- Open DevTools → Console → filter `tg-media-save` and read the error.
-- Make sure the media **actually plays** in the browser. The tool can only save bytes the page
-  itself can load — if the player never starts, there is no URL to fetch.
-
-## Video won't play; console shows Service Worker errors
-
-Symptoms: `FetchEvent … rejected`, `ERR_NETWORK_CHANGED`, `[MP-SERVICE] worker task error`,
-`MEDIA_ELEMENT_ERROR: Empty src attribute`, `handleVideoLeak … leak`.
-
-This means **Telegram's own pipeline is broken** (often after a network/VPN change), not the
-extension. The page cannot play the media, so no userscript can download it. Fix, in order:
-
-1. Stabilize the network / VPN.
-2. Close **other** `web.telegram.org` tabs (the Service Worker is shared across tabs).
-3. Hard-reload (Cmd/Ctrl+Shift+R).
-4. Still broken → DevTools → Application → Service Workers → **Unregister** `sw-*` → reload.
-   Do **not** enable "Bypass for network" — `/stream/` only works *through* the Service Worker.
-5. Nuclear option → Application → Storage → **Clear site data** → log in to Telegram Web again.
-
-## Updating after code changes
-
-1. `./scripts/build.sh` (regenerates `tg-media-save.user.js` and `extension/content.js`).
-2. Userscript: re-paste the new `tg-media-save.user.js` (or rely on `@updateURL` auto-update).
-   Extension: in `chrome://extensions`, click the reload ↻ icon on the extension card.
-3. Hard-reload the Telegram tab.
+For developers: [architecture](ARCHITECTURE.md) and [tests](../test/README.md).

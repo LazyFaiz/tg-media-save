@@ -1,12 +1,12 @@
 # tg-media-save
 
-> Local fork 1.0.2: see [中文安装与修复说明](README.zh-CN.md). Build locally with `npm run build` (Node.js + Python 3). Download links below point to this repository.
+> **TG Media Save 1.0.5** — [中文安装与故障排查](README.zh-CN.md). The previously failing WebK MediaSource video download was confirmed working by the user on 2026-09-21. 49 automated tests pass.
 
 ![tg-media-save — save photos, videos, GIFs and voice messages from Telegram Web](docs/assets/hero-banner.png)
 
 [![CI](https://github.com/LazyFaiz/tg-media-save/actions/workflows/ci.yml/badge.svg)](https://github.com/LazyFaiz/tg-media-save/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.0.1-229ed9.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.0.5-229ed9.svg)](CHANGELOG.md)
 [![Chrome](https://img.shields.io/badge/Chrome-MV3-229ed9.svg)](https://developer.chrome.com/docs/extensions/mv3)
 
 **Русский → [README.ru.md](./README.ru.md)**
@@ -126,11 +126,17 @@ release zip is published.
 
 ---
 
+## Updating
+
+Update the loaded extension folder, reload **TG Media Save**, then **refresh Telegram and reopen the video**. Source capture must start before the player creates its MediaSource. For userscripts, reinstall this repository's script manually; no explicit auto-update URLs are configured.
+
 ## Usage
 
 1. **Play** the video/audio (or open the photo) so the page loads the media.
 2. Click ⬇ **on the media** — or the floating ⬇ bottom-left.
 3. The file saves with its real name; progress shows as a percent.
+
+For errors, run `JSON.stringify(tgSaver.diagnose())` and see [Troubleshooting](docs/TROUBLESHOOTING.md).
 
 Console helpers: `tgSaver.status()`, `tgSaver.downloadLast()`, `tgSaver.debug(true)`.
 
@@ -151,11 +157,13 @@ Console helpers: `tgSaver.status()`, `tgSaver.downloadLast()`, `tgSaver.debug(tr
 ## Contributing
 
 Bug reports and ideas — in [Issues](https://github.com/LazyFaiz/tg-media-save/issues).
-PRs welcome: edit [`src/content.js`](src/content.js), run `./scripts/build.sh`, and make sure
+PRs welcome: edit [`src/content.js`](src/content.js), run `npm run build`, and make sure
 `npm test` passes.
 
 ---
 
-## License
+## Origin and license
+
+Based on [eiler2005/tg-media-saver](https://github.com/eiler2005/tg-media-saver), with the original author's attribution retained.
 
 [MIT](LICENSE) © 2026 Denis Ermilov

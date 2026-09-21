@@ -1,53 +1,70 @@
-# tg-media-save（本地修复版）
+# TG Media Save
 
-基于 https://github.com/eiler2005/tg-media-saver，保留原作者 MIT 许可证及历史。
-仅下载当前账号可访问且你有权保存的内容。不收集数据。
+项目仓库：[LazyFaiz/tg-media-save](https://github.com/LazyFaiz/tg-media-save)。安装后的扩展名称为 **TG Media Save**，项目和发行文件使用 `tg-media-save`。
+
+基于 [eiler2005/tg-media-saver](https://github.com/eiler2005/tg-media-saver)，保留原作者署名与 [MIT 许可证](LICENSE)。仅保存当前账号可访问且你有权保存的内容；不发送消息，不收集数据。
+
+## 当前版本：1.0.5
+
+2026-09-21，用户在此前报错的 Telegram WebK 视频上确认可以下载。该案例使用 MediaSource 播放器，原始 HLS 地址被 `blob:` 地址覆盖；1.0.5 在覆盖前记录来源，下载对应的原始文件。
+
+49 项自动测试通过。该实测结论针对本次视频下载案例，不代表所有客户端、媒体类型及油猴环境均已验证。
 
 ## 安装
 
-1. 打开 Chrome 的 chrome://extensions 或 Edge 的 edge://extensions，开启开发者模式。
-2. 禁用旧版 TG Media Saver 和同类油猴脚本，避免重复执行。
-3. 点击“加载已解压的扩展程序”，选择当前项目的 extension 文件夹。
-4. 刷新 Telegram Web，播放媒体后点击下载按钮。
+1. [下载扩展 ZIP](https://github.com/LazyFaiz/tg-media-save/raw/main/dist/tg-media-save-extension.zip) 并解压；也可以直接使用本仓库的 `extension/` 文件夹。
+2. 打开 Chrome 的 `chrome://extensions` 或 Edge 的 `edge://extensions`，开启开发者模式。
+3. 禁用旧版 TG Media Saver 和重复的同类脚本。
+4. 点击“加载已解压的扩展程序”，选择包含 `manifest.json` 的文件夹。
+5. **刷新 Telegram 网页，再重新打开并播放视频**，点击媒体旁的下载按钮。
 
-也可解压 dist/tg-media-save-extension.zip 后加载。本项目 README 下载链接指向 LazyFaiz/tg-media-save。
-油猴版本使用本项目 tg-media-save.user.js；已移除上游更新地址，避免覆盖本地修复。
+油猴版本使用 [tg-media-save.user.js](tg-media-save.user.js)，与扩展二选一。当前脚本没有显式 `@updateURL` / `@downloadURL`，升级时请重新安装本仓库版本，不依赖自动更新。
 
-## 1.0.2 修复
+## 升级
 
-- 网络异常和指定临时 HTTP 错误最多尝试三次，包括读取响应体时断流；重试保持相同下载偏移。
-- 使用 1 MiB 范围请求，校验响应范围、实际字节数和总长度，防止残缺文件被当作成功。
-- 已写入部分文件后收到完整响应，先重置文件再保存，避免重复内容。
-- 更新复用媒体元素的地址；延迟释放下载 Blob URL。
-- 区分网络失败、HTTP 错误和无法直接下载的 MediaSource/失效 blob 地址。
+1. 获取最新代码或安装包，更新浏览器实际加载的文件夹。
+2. 在扩展管理页重新加载 **TG Media Save**，确认版本为 **1.0.5**。
+3. **刷新 Telegram 页面，然后重新打开视频**。只重新加载扩展无法捕获旧页面已经创建的媒体来源。
+4. 播放后点击下载。
 
-截图中的 Failed to fetch 是通用网络异常，不能单凭截图确定唯一根因。
-本修复不会重置 Telegram 会话或注销 Service Worker。若媒体本身无法播放，需恢复网络并刷新页面。
-1.0.3 支持 Telegram WebK 在 video.src 保留 HLS 文档描述的媒体：自动转换为同一文档的 stream 地址，不再下载播放器的 MediaSource blob。对于没有可解析原始地址的 blob，仍可能报错。
+## 下载机制与限制
 
-升级后请在扩展管理页重新加载扩展，并刷新 Telegram 页面。
+- WebK HLS / MediaSource：按媒体元素记录原始地址，将有效的同源 HLS 文档地址转换为 stream 请求，不用最近一次网络请求猜测视频。
+- 普通 Blob：捕获创建时的文件引用，支持保存地址后来被撤销的文件。缓存最多 32 项、合计 512 MiB，每项保留五分钟；超限淘汰旧项，超大文件不缓存。
+- 分段下载：每次最多请求 1 MiB，临时网络错误最多尝试三次，并校验范围、字节数和总长度。
+- 支持 File System Access API 时分段写入磁盘，否则在内存中组装文件。普通 Blob 保存使用浏览器下载。
+- MediaSource 不是普通文件；若未捕获原始地址，不能直接下载其 blob。播放器实现变化也可能影响适配。
 
-## 开发与验证
+## 故障排查
 
-需要 Node.js 18+、Python 3。
+先确认页面已刷新、视频已重新打开。若仍失败，在 **Telegram 网页**的开发者工具 Console 运行：
+
+```js
+JSON.stringify(tgSaver.diagnose())
+```
+
+输出含版本、捕获功能状态、缓存大小及媒体来源类型，不含完整媒体 URL 或消息内容。
+
+| 字段 | 含义 |
+|---|---|
+| `sourceCaptureInstalled` | 原始来源捕获是否安装成功 |
+| `blobCaptureInstalled` | Blob / MediaSource 类型捕获是否安装成功 |
+| `sourceType: "stream"` | 已解析为文件下载地址 |
+| `capturedType: "MediaSource"` | 捕获到播放器对象，但当前没有解析到原始文件地址 |
+| `capturedType: "not-retained"` | 该地址没有缓存；对于 stream 来源属于正常情况 |
+| `readyState: 0` | 此媒体元素尚未加载，页面可能同时存在空闲元素 |
+
+报告问题时附上诊断输出、报错文字以及视频是否能播放。`Failed to fetch` 本身不能区分网络故障、失效 Blob 和 MediaSource。若视频也不能播放，先恢复网络并刷新 Telegram；不要启用 Service Worker 的 “Bypass for network”。详见 [故障排查](docs/TROUBLESHOOTING.md)。
+
+## 开发
+
+需要 Node.js 18+ 和 Python 3（`python` 在 PATH 中），运行时无第三方依赖。
 
 ```sh
 npm run build
 npm test
 ```
 
-源码为 src/content.js，构建生成扩展、油猴脚本及 ZIP。
-Git 的 upstream 保留参考仓库地址，未设置自己的 origin，未推送到远程。
-自动测试使用模拟响应；真实账号下的播放、下载和文件打开仍需手工验证。
+仅编辑 `src/content.js`，构建会生成扩展脚本、油猴脚本和 ZIP。版本以 `extension/manifest.json` 为准。`scripts/build.sh` 是调用 `python3 scripts/build.py` 的兼容入口。
 
-
-## 1.0.4：播放正常但 blob 报 ERR_FILE_NOT_FOUND
-
-普通 Blob 地址可能在播放开始后被撤销。新版从页面启动时捕获原始 Blob 引用，支持保存已捕获但地址失效的文件。最多保留 32 项、合计 512 MiB，每项五分钟，超限淘汰旧项，超大文件不缓存。不改变 Telegram 原本的地址撤销行为。
-
-先重新加载扩展，再刷新 Telegram 并重新打开视频。历史失效地址无法追溯恢复。若仍失败，在 Telegram 控制台运行 `JSON.stringify(tgSaver.diagnose())`，输出仅含来源类型、大小和捕获状态。MediaSource 仍需可解析的原始文件地址，不能当普通 Blob 保存。真实 Telegram 下载需要实际验证。
-
-
-## 1.0.5：MediaSource 地址覆盖
-
-在页面启动时跟踪 WebK 为媒体元素定义的 src setter，保留 HLS 地址被 MediaSource blob 覆盖前的文件来源。必须重新加载扩展、刷新 Telegram，再重新打开视频。只解析当前元素及其对应 blob，不以最近一次网络请求猜测文件。若仍失败，提供 `JSON.stringify(tgSaver.diagnose())` 输出。此适配依赖 WebK 的播放器实现，实际下载仍需验证。
+[架构说明](docs/ARCHITECTURE.md) · [测试说明](test/README.md) · [更新日志](CHANGELOG.md)

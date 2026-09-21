@@ -1,34 +1,33 @@
-# 1.0.5
+# Changelog
+
+Changes to TG Media Save (`tg-media-save`). Original upstream release history is retained below.
+
+## 1.0.5 — 2026-09-21
 
 - Observe WebK per-element src assignments before HLS overwrites the source with a MediaSource blob.
 - Resolve only matching element/blob pairs and clear source state on unrelated assignments.
 - Report source-hook availability through diagnose().
+- Validation: 49 automated tests passed; the user confirmed the previously failing WebK MediaSource video downloaded successfully on 2026-09-21.
 
-# 1.0.4
+## 1.0.4
 
 - Capture file Blobs at URL creation so revoked playback URLs can still be saved.
 - Bound retention to 32 entries, 512 MiB total and five minutes; keep native revocation unchanged.
 - Distinguish captured MediaSource objects and add metadata-only tgSaver.diagnose().
 
-# 1.0.3
+## 1.0.3
 
 - Resolve WebK HLS video.src descriptors to the matching stream endpoint instead of fetching MediaSource currentSrc blobs.
 - Re-resolve floating downloads when elements change and bound the final Range to the file size.
 - Add regression coverage for HLS sources, ordinary blobs, source children, and reused elements.
 
-# 1.0.2 (local fork)
+## 1.0.2 (local fork)
 
 - Retry transient fetch/body failures with bounded backoff.
 - Bound Range requests and validate byte ranges and lengths before saving.
 - Reset partial disk output when a server returns the full file.
 - Refresh reused media URLs and improve failure diagnostics.
 - Add a portable Python build and local installation guide.
-
-# Changelog
-
-All notable changes to **tg-media-save** are documented here.
-The format is based on [Keep a Changelog](https://keepachangelog.com/), and the project
-adheres to [Semantic Versioning](https://semver.org/).
 
 ## [1.0.1] - 2026-07-26
 

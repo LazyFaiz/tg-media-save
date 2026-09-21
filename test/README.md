@@ -1,52 +1,23 @@
 # Tests
 
-tg-media-save is tested with **Node's built-in test runner** — no dependencies.
+Run `npm test` with Node.js 18+ and Python 3 (`python` in PATH). The suite uses Node's built-in test runner and no external test dependencies. The build test runs the portable Python builder and updates generated artifacts.
 
-```bash
-npm test          # or: node --test test/*.test.js
-```
+## Coverage
 
-CI (`.github/workflows/ci.yml`) runs `npm test` on every push and pull request.
+| File | Coverage |
+|---|---|
+| `unit.test.js` | Stream metadata, sizes, MIME extensions and names |
+| `download.test.js` | Range assembly, retries, whole-response fallback, disk aborts, invalid responses, retained Blob downloads and cache limits |
+| `content.test.js` | Console API and initial state under the DOM shim |
+| `build.test.js` | Build outputs, manifest, version injection and source/output byte equality |
+| `media-source.test.js` | HLS source resolution, ordinary blobs, source children, element reuse and invalid origins/descriptors |
+| `blob-capture.test.js` | Creation hook, native revocation, saving identical Blob data and MediaSource rejection |
+| `source-capture.test.js` | HLS-to-blob assignments, per-element isolation, setter exceptions, reuse and unrelated property definitions |
 
-## What is tested, where, and how
+Tests load the real `src/content.js` with a DOM shim or VM context. Mock responses exercise download behavior without Telegram authentication. The guarded CommonJS export includes the download engine, source resolvers and Blob-cache helpers for these tests; it is inactive in normal browser execution.
 
-| File | What it verifies | How |
-|---|---|---|
-| `unit.test.js` | Pure helpers: `describeStream` (parses the `/stream/` JSON descriptor, decodes unicode file names, returns `null` for non-stream URLs), `humanSize` (B/KB/MB/GB formatting), `extFromMime` (known/unknown/empty), `withExt` (append vs. keep an existing extension) | Direct function calls + `node:assert` |
-| `download.test.js` | The core `download()` engine: HTTP `Range` chunking + blob concatenation, the "server ignores `Range`" whole-file fallback, the `blob:`/`data:` single-shot branch, non-2xx error propagation, and the **File System Access** path (streaming chunks to a writable, `close()` on success, `abort()` on a failed chunk) | Mocks the page context (`page.fetch`, `page.Blob`, `page.URL`, `page.showSaveFilePicker`) and a recording `document.createElement`; asserts the fetch call sequence (`bytes=0-`, `bytes=50-`, …), progress callbacks, and the final download anchor / writable state |
-| `content.test.js` | The boot path exposes the `tgSaver` console API (`status` / `downloadLast` / `debug`) and its initial state — without a browser | Loads the **real** `src/content.js` under a DOM shim (`document.body = null` ⇒ `boot()` is skipped, no timers/DOM) |
-| `build.test.js` | The packaging pipeline: `scripts/build.sh` succeeds; the userscript has a valid header with the manifest version injected (no leftover `__VERSION__`); `extension/content.js` is byte-identical to `src/content.js`; the manifest is MV3 / `world: MAIN` / `document_start` and references files that exist; icons are present and non-empty; the popup has no inline `<script>` | Runs `scripts/build.sh`, then reads and validates every artifact |
+## Validation of 1.0.5
 
-## How the browser is simulated
+49 tests passed. On 2026-09-21 the user confirmed successful downloading of the previously failing WebK MediaSource video after the 1.0.5 fix. This manual result supplements the simulated tests; it does not verify all Telegram clients, media formats or userscript environments.
 
-`helpers.js` installs a minimal `window`/`document` shim so the real content script can be
-`require`d in Node:
-
-- `window` is a plain object, so `page = unsafeWindow || window` resolves to it and the console
-  helpers attach there.
-- `document.body` is left `null`, so the IIFE takes the `addEventListener` branch and does **not**
-  auto-run `boot()` (no timers, no DOM building) at require time.
-
-The `download()` tests then replace `page.fetch` / `page.Blob` / `page.URL` (and, for the
-streaming-to-disk tests, `page.showSaveFilePicker`) with fakes, and capture the `<a>` element
-that `saveBlob()` creates — so the whole pipeline is exercised **with no network and no browser**.
-
-## The test hook in `src/content.js`
-
-The IIFE ends with a guarded export:
-
-```js
-if (typeof module !== "undefined" && module.exports) {
-  module.exports = { describeStream, humanSize, extFromMime, withExt, download };
-}
-```
-
-This is a no-op in browsers/userscript (there is no `module` there). Tests `require` the file to
-reach the pure helpers and the `download()` engine. Keep this hook when refactoring.
-
-## What is intentionally NOT covered
-
-Real Telegram playback and the Service Worker behavior require a logged-in browser, so they are
-not unit-tested. That path is the **manual smoke test**: load the extension/userscript on
-`web.telegram.org`, play a video, and confirm ⬇ saves it (see
-[docs/TROUBLESHOOTING.md](../docs/TROUBLESHOOTING.md)).
+For future runtime changes, rebuild, run the suite, then load the extension, refresh Telegram, reopen a video and check the saved file. See [troubleshooting](../docs/TROUBLESHOOTING.md) for diagnosis.

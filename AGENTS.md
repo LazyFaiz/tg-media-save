@@ -6,8 +6,7 @@ Instructions and context for AI coding agents (and human developers) working in 
 
 A browser tool that saves media (photos, videos, GIFs, voice messages) from **Telegram Web**
 (`web.telegram.org`, including the `/k/` and `/z/` clients), including channels with
-"restrict saving content" enabled. It is an **original, MIT-licensed implementation**, not a
-derivative of any existing script. Not affiliated with Telegram.
+"restrict saving content" enabled. This fork is based on **eiler2005/tg-media-saver**, with the original MIT license and attribution retained. Not affiliated with Telegram.
 
 It ships in **two distribution modes from a single source of truth**:
 
@@ -21,6 +20,16 @@ It ships in **two distribution modes from a single source of truth**:
   generated or static.
 - Version lives in **one place**: `extension/manifest.json` → `version`. The build injects it
   into the userscript header.
+
+## Current integration notes (1.0.5)
+
+- Installed display name: **TG Media Save**; repository/artifact names: `tg-media-save`.
+- Use `npm run build` (Python 3) on Windows; `scripts/build.sh` delegates to the same builder with `python3`.
+- Media capture now checks original sources and records per-element HLS-to-MediaSource assignments at document startup. Do not regress to currentSrc-only resolution.
+- Ordinary Blob references have bounded retention (32 entries, 512 MiB total, five minutes); native revocation is unchanged.
+- `tgSaver.diagnose()` reports source-hook and Blob-hook status without raw media URLs.
+- 49 tests passed for 1.0.5. The user confirmed the previously failing WebK video downloaded successfully on 2026-09-21; do not generalize this to all clients.
+- Current details: `docs/ARCHITECTURE.md`, `docs/TROUBLESHOOTING.md`, `test/README.md`.
 
 ## Architecture (the parts that are easy to get wrong)
 
@@ -67,12 +76,10 @@ It ships in **two distribution modes from a single source of truth**:
   of `{ dcId, location, size, mimeType, fileName }`. `describeStream(url)` extracts the real
   `fileName`/`size`/`mimeType`. This is how we name files correctly.
 
-- **Capture.** Media URLs are discovered by **polling** `<video>`/`<audio>` `currentSrc`
-  (`capture()`, every `POLL_MS`). The DOM is shared between worlds, so this works from the
-  isolated world too. A `data-tgs-src` attribute marks already-seen elements.
+- **Capture.** Poll media every `POLL_MS` through `mediaUrl()`, preferring valid original sources or the recorded element/blob association over `currentSrc`. A `data-tgs-src` attribute tracks changes.
 
 - **Download engine.** `download(url, onProgress)`:
-  - `blob:`/`data:` → single `fetch` → save.
+  - Retained file Blob → save directly; other `blob:`/`data:` → fetch → save. Unresolved captured MediaSource → diagnostic error.
   - Otherwise HTTP `Range` chunking. If the File System Access API is available, stream chunks
     to disk via `showSaveFilePicker().createWritable()`; else accumulate blobs and concatenate.
     If the server ignores `Range` (no `Content-Range`), fall back to saving the whole response.
@@ -158,8 +165,8 @@ Before submitting changes, all of these must pass:
   `CHANGELOG.md` too.
 - Plain JS, no build-time transpilation, no dependencies at runtime. The only dev-time
   dependency is Pillow (via `uv`) for icons.
-- Keep the userscript header (`src/userscript.meta.js`) fields valid; `@downloadURL`/`@updateURL`
-  point at the GitHub raw `.user.js` for auto-updates.
+- Keep the userscript header valid. This fork currently omits explicit `@downloadURL` /
+  `@updateURL`; document manual upgrades rather than promising auto-updates.
 - The extension requests **no permissions** beyond `content_scripts` matches. Do not add
   broad host permissions or background service workers unless strictly necessary — minimal
   permissions matter for store review and user trust.
@@ -188,5 +195,5 @@ README → Troubleshooting. Do not try to "fix" this in the content script.
 ## Git
 
 - Stage explicitly; no `git add -A`. Do not commit secrets (there are none in this project).
-- `dist/` is gitignored. Generated `tg-media-save.user.js` and `extension/content.js` ARE
+- `dist/` is gitignored for new files, but the existing extension ZIP is tracked. Generated `tg-media-save.user.js` and `extension/content.js` ARE
   committed (intentionally, for raw-URL install and unpacked loading without a build step).

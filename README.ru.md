@@ -1,10 +1,14 @@
 # tg-media-save
 
+Установленное расширение: **TG Media Save 1.0.5**. После обновления перезагрузите расширение, обновите страницу Telegram и заново откройте видео. Пользователь подтвердил успешное скачивание ранее проблемного WebK-видео 2026-09-21; пройдено 49 автоматических тестов.
+
+[中文说明](README.zh-CN.md) · [Диагностика](docs/TROUBLESHOOTING.md). Для отчёта об ошибке выполните `JSON.stringify(tgSaver.diagnose())`. Userscript обновляйте вручную: явные URL автообновления не заданы.
+
 ![tg-media-save — сохраняйте фото, видео, GIF и голосовые из Telegram Web](docs/assets/hero-banner.png)
 
 [![CI](https://github.com/LazyFaiz/tg-media-save/actions/workflows/ci.yml/badge.svg)](https://github.com/LazyFaiz/tg-media-save/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.0.1-229ed9.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.0.5-229ed9.svg)](CHANGELOG.md)
 [![Chrome](https://img.shields.io/badge/Chrome-MV3-229ed9.svg)](https://developer.chrome.com/docs/extensions/mv3)
 
 **English → [README.md](./README.md)**
@@ -149,7 +153,7 @@ tg-media-save добавляет кнопку ⬇ прямо на медиа в 
 ## Вклад
 
 Багрепорты и идеи — в [Issues](https://github.com/LazyFaiz/tg-media-save/issues).
-PR приветствуются: правьте [`src/content.js`](src/content.js), запускайте `./scripts/build.sh`
+PR приветствуются: правьте [`src/content.js`](src/content.js), запускайте `npm run build`
 и убедитесь, что `npm test` проходит.
 
 ---
