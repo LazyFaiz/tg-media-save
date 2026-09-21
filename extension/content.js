@@ -103,9 +103,64 @@
     }
   };
 
+  // Telegram can revoke a Blob URL after attaching it to a playable video.
+  // Keep bounded references to file Blobs, without delaying Telegram's revocation.
+  const createBlobCache = (now = Date.now, limit = 512 * 1024 * 1024, ttl = 5 * 60 * 1000) => {
+    const entries = new Map();
+    let bytes = 0;
+    const remove = (url) => {
+      bytes -= entries.get(url)?.blob?.size || 0;
+      entries.delete(url);
+    };
+    const prune = () => {
+      for (const [url, item] of entries) if (now() - item.time >= ttl) remove(url);
+    };
+    return {
+      put(url, blob) {
+        prune();
+        remove(url);
+        if (blob && blob.size > limit) return;
+        entries.set(url, { blob, time: now() });
+        bytes += blob?.size || 0;
+        while (bytes > limit || entries.size > 32) remove(entries.keys().next().value);
+      },
+      get(url) { prune(); return entries.get(url); },
+      prune,
+      status() { prune(); return { entries: entries.size, bytes }; },
+    };
+  };
+  const blobCache = createBlobCache();
+  let savingBlob = false;
+  let blobCaptureInstalled = false;
+  const installBlobCapture = () => {
+    if (!page.URL?.createObjectURL || !page.Blob) return;
+    const original = page.URL.createObjectURL;
+    try {
+      page.URL.createObjectURL = function (object) {
+        const url = Reflect.apply(original, this, arguments);
+        try {
+          if (!savingBlob) {
+            if (object instanceof page.Blob) blobCache.put(url, object);
+            else if ((page.MediaSource && object instanceof page.MediaSource) ||
+                     (page.ManagedMediaSource && object instanceof page.ManagedMediaSource)) {
+              blobCache.put(url, null);
+            }
+          }
+        } catch (_) { /* Capture must not interfere with playback. */ }
+        return url;
+      };
+      blobCaptureInstalled = page.URL.createObjectURL !== original;
+      if (blobCaptureInstalled) setInterval(blobCache.prune, 60000);
+    } catch (_) { /* Some userscript environments do not allow page API hooks. */ }
+  };
+  installBlobCapture();
+
   // ---------- download engine ----------
   const saveBlob = (blob, name) => {
-    const u = page.URL.createObjectURL(blob);
+    let u;
+    savingBlob = true;
+    try { u = page.URL.createObjectURL(blob); }
+    finally { savingBlob = false; }
     const a = document.createElement("a");
     a.href = u;
     a.download = name;
@@ -144,12 +199,16 @@
 
     // Ordinary Blob and data URLs contain files; MediaSource blobs do not.
     if (/^(blob:|data:)/.test(url)) {
-      let blob;
+      const captured = blobCache.get(url);
+      if (captured && !captured.blob) {
+        throw new Error("This video uses MediaSource, not a file Blob. Its original file URL was not found. Run tgSaver.diagnose() for source details.");
+      }
+      let blob = captured?.blob;
       try {
-        ({ chunk: blob } = await fetchChunk(url));
+        if (!blob) ({ chunk: blob } = await fetchChunk(url));
       } catch (error) {
         if (!url.startsWith("blob:")) throw error;
-        throw new Error("This blob URL is expired or belongs to MediaSource and cannot be fetched as a file. Reopen the media and try again; playback alone does not make a MediaSource URL downloadable.", { cause: error });
+        throw new Error("The blob file is unavailable and was not retained. Reload Telegram after updating the extension, then reopen the video and download within five minutes. Run tgSaver.diagnose() if this continues.", { cause: error });
       }
       const finalName = withExt(name, blob.type);
       saveBlob(blob, finalName);
@@ -439,7 +498,22 @@
   // ---------- console helpers ----------
   try {
     page.tgSaver = {
-      status: () => ({ last: state.last, verbose }),
+      status: () => ({ last: state.last, verbose, blobCaptureInstalled, retained: blobCache.status() }),
+      diagnose: () => ({
+        version: "1.0.4",
+        blobCaptureInstalled,
+        retained: blobCache.status(),
+        media: Array.from(document.querySelectorAll("video, audio"), (el) => {
+          const url = mediaUrl(el);
+          const captured = blobCache.get(url);
+          return {
+            readyState: el.readyState,
+            sourceType: url.startsWith("blob:") ? "blob" : fileSource(url) ? "stream" : "other",
+            capturedType: !captured ? "not-retained" : captured.blob ? "Blob" : "MediaSource",
+            size: captured?.blob?.size || 0,
+          };
+        }),
+      }),
       downloadLast: () => state.last && runDownload(mediaUrl(state.last.element) || state.last.url),
       debug: (v) => {
         verbose = !!v;
@@ -454,7 +528,7 @@
   // (there `module` is undefined). `download` is exported to test the core engine
   // against a mocked page.fetch; the DOM/UI code paths are not exported.
   if (typeof module !== "undefined" && module.exports) {
-    module.exports = { describeStream, humanSize, extFromMime, withExt, download, fileSource, mediaUrl };
+    module.exports = { describeStream, humanSize, extFromMime, withExt, download, fileSource, mediaUrl, createBlobCache, blobCache };
   }
 
   // ---------- boot ----------

@@ -1,3 +1,9 @@
+# 1.0.4
+
+- Capture file Blobs at URL creation so revoked playback URLs can still be saved.
+- Bound retention to 32 entries, 512 MiB total and five minutes; keep native revocation unchanged.
+- Distinguish captured MediaSource objects and add metadata-only tgSaver.diagnose().
+
 # 1.0.3
 
 - Resolve WebK HLS video.src descriptors to the matching stream endpoint instead of fetching MediaSource currentSrc blobs.

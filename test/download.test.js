@@ -239,3 +239,35 @@ test("download: full response after a chunk resets disk output", async () => {
   await download(streamUrl({ size: 4 }));
   assert.deepEqual(operations, [['write', 2], ['seek', 0], ['truncate', 0], ['write', 4], ['close']]);
 });
+
+test('download: retained revoked Blob saves without fetching its dead URL', async () => {
+  const { blobCache } = require('../src/content.js');
+  setupPage({ fetchImpl: async () => { throw new Error('must not fetch revoked URL'); } });
+  blobCache.put('blob:revoked', new MockBlob(['complete-file'], { type: 'video/mp4' }));
+  const name = await download('blob:revoked');
+  assert.match(name, /\.mp4$/);
+  assert.equal(lastAnchor().download, name);
+});
+
+test('download: captured MediaSource is not saved as a file', async () => {
+  const { blobCache } = require('../src/content.js');
+  setupPage({ fetchImpl: async () => { throw new Error('must not fetch MediaSource'); } });
+  blobCache.put('blob:mse', null);
+  await assert.rejects(download('blob:mse'), /uses MediaSource/);
+  assert.equal(lastAnchor(), undefined);
+});
+
+test('Blob retention expires and respects byte and entry limits', () => {
+  const { createBlobCache } = require('../src/content.js');
+  let now = 0;
+  const cache = createBlobCache(() => now, 10, 100);
+  cache.put('a', { size: 6 }); cache.put('b', { size: 6 });
+  assert.equal(cache.get('a'), undefined);
+  assert.equal(cache.status().bytes, 6);
+  cache.put('large', { size: 11 });
+  assert.equal(cache.get('large'), undefined);
+  now = 100;
+  assert.deepEqual(cache.status(), { entries: 0, bytes: 0 });
+  for (let i = 0; i < 40; i++) cache.put(String(i), null);
+  assert.equal(cache.status().entries, 32);
+});

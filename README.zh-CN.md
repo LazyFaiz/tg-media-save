@@ -39,3 +39,10 @@ npm test
 源码为 src/content.js，构建生成扩展、油猴脚本及 ZIP。
 Git 的 upstream 保留参考仓库地址，未设置自己的 origin，未推送到远程。
 自动测试使用模拟响应；真实账号下的播放、下载和文件打开仍需手工验证。
+
+
+## 1.0.4：播放正常但 blob 报 ERR_FILE_NOT_FOUND
+
+普通 Blob 地址可能在播放开始后被撤销。新版从页面启动时捕获原始 Blob 引用，支持保存已捕获但地址失效的文件。最多保留 32 项、合计 512 MiB，每项五分钟，超限淘汰旧项，超大文件不缓存。不改变 Telegram 原本的地址撤销行为。
+
+先重新加载扩展，再刷新 Telegram 并重新打开视频。历史失效地址无法追溯恢复。若仍失败，在 Telegram 控制台运行 `JSON.stringify(tgSaver.diagnose())`，输出仅含来源类型、大小和捕获状态。MediaSource 仍需可解析的原始文件地址，不能当普通 Blob 保存。真实 Telegram 下载需要实际验证。
