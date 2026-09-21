@@ -103,6 +103,44 @@
     }
   };
 
+  const originalSources = new WeakMap();
+  let sourceCaptureInstalled = false;
+  // WebK defines a per-element src setter. HLS later calls that setter with a
+  // MediaSource blob, overwriting its original HLS URL. Observe both assignments.
+  const installSourceCapture = () => {
+    if (!page.Object?.defineProperty || !page.HTMLMediaElement) return;
+    const define = page.Object.defineProperty;
+    const wrapped = function (target, key, descriptor) {
+      if (key !== "src" || !(target instanceof page.HTMLMediaElement) ||
+          typeof descriptor?.set !== "function") {
+        return Reflect.apply(define, this, arguments);
+      }
+      const setter = descriptor.set;
+      return Reflect.apply(define, this, [target, key, {
+        ...descriptor,
+        set(value) {
+          const previous = originalSources.get(this);
+          const file = fileSource(value);
+          if (file) originalSources.set(this, { file, blob: null });
+          else if (typeof value === "string" && value.startsWith("blob:") && previous) {
+            originalSources.set(this, { file: previous.file, blob: value });
+          } else originalSources.delete(this);
+          try { return Reflect.apply(setter, this, [value]); }
+          catch (error) {
+            if (previous) originalSources.set(this, previous);
+            else originalSources.delete(this);
+            throw error;
+          }
+        },
+      }]);
+    };
+    try {
+      page.Object.defineProperty = wrapped;
+      sourceCaptureInstalled = page.Object.defineProperty === wrapped;
+    } catch (_) { /* Unsupported page API hooks are reported in diagnose(). */ }
+  };
+  installSourceCapture();
+
   // Telegram can revoke a Blob URL after attaching it to a playable video.
   // Keep bounded references to file Blobs, without delaying Telegram's revocation.
   const createBlobCache = (now = Date.now, limit = 512 * 1024 * 1024, ttl = 5 * 60 * 1000) => {
@@ -310,6 +348,8 @@
       const file = fileSource(source);
       if (file) return file;
     }
+    const recorded = originalSources.get(el);
+    if (recorded?.blob && (el.currentSrc || el.src) === recorded.blob) return recorded.file;
     return el.currentSrc || el.src || "";
   };
 
@@ -500,7 +540,8 @@
     page.tgSaver = {
       status: () => ({ last: state.last, verbose, blobCaptureInstalled, retained: blobCache.status() }),
       diagnose: () => ({
-        version: "1.0.4",
+        version: "1.0.5",
+        sourceCaptureInstalled,
         blobCaptureInstalled,
         retained: blobCache.status(),
         media: Array.from(document.querySelectorAll("video, audio"), (el) => {

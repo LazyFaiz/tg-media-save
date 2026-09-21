@@ -1,3 +1,9 @@
+# 1.0.5
+
+- Observe WebK per-element src assignments before HLS overwrites the source with a MediaSource blob.
+- Resolve only matching element/blob pairs and clear source state on unrelated assignments.
+- Report source-hook availability through diagnose().
+
 # 1.0.4
 
 - Capture file Blobs at URL creation so revoked playback URLs can still be saved.

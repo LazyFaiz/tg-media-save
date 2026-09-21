@@ -46,3 +46,8 @@ Git 的 upstream 保留参考仓库地址，未设置自己的 origin，未推�
 普通 Blob 地址可能在播放开始后被撤销。新版从页面启动时捕获原始 Blob 引用，支持保存已捕获但地址失效的文件。最多保留 32 项、合计 512 MiB，每项五分钟，超限淘汰旧项，超大文件不缓存。不改变 Telegram 原本的地址撤销行为。
 
 先重新加载扩展，再刷新 Telegram 并重新打开视频。历史失效地址无法追溯恢复。若仍失败，在 Telegram 控制台运行 `JSON.stringify(tgSaver.diagnose())`，输出仅含来源类型、大小和捕获状态。MediaSource 仍需可解析的原始文件地址，不能当普通 Blob 保存。真实 Telegram 下载需要实际验证。
+
+
+## 1.0.5：MediaSource 地址覆盖
+
+在页面启动时跟踪 WebK 为媒体元素定义的 src setter，保留 HLS 地址被 MediaSource blob 覆盖前的文件来源。必须重新加载扩展、刷新 Telegram，再重新打开视频。只解析当前元素及其对应 blob，不以最近一次网络请求猜测文件。若仍失败，提供 `JSON.stringify(tgSaver.diagnose())` 输出。此适配依赖 WebK 的播放器实现，实际下载仍需验证。
