@@ -1,6 +1,6 @@
 # Tests
 
-Run `npm test` with Node.js 18+ and Python 3 (`python` in PATH). The suite uses Node's built-in test runner and no external test dependencies. The build test runs the portable Python builder and updates generated artifacts.
+Run `npm test` with Node.js 18+ and Python 3 (`python` in PATH). The suite uses Node's built-in test runner and no external test dependencies. The build test runs the portable Python builder and regenerates the userscript, extension content script and ZIP.
 
 ## Coverage
 
@@ -20,4 +20,4 @@ Tests load the real `src/content.js` with a DOM shim or VM context. Mock respons
 
 49 tests passed. On 2026-09-21 the user confirmed successful downloading of the previously failing WebK MediaSource video after the 1.0.5 fix. This manual result supplements the simulated tests; it does not verify all Telegram clients, media formats or userscript environments.
 
-For future runtime changes, rebuild, run the suite, then load the extension, refresh Telegram, reopen a video and check the saved file. See [troubleshooting](../docs/TROUBLESHOOTING.md) for diagnosis.
+Before submitting runtime changes, run `npm test` and `npm run build`, then load the unpacked extension (or userscript), refresh Telegram, reopen and play a video, and check that the download button appears and the saved file opens. The automated tests use mocks and cannot establish compatibility with a live Telegram session. See [troubleshooting](../docs/TROUBLESHOOTING.md) for diagnosis.

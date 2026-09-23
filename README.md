@@ -8,7 +8,7 @@
 
 ## 功能
 
-为 Telegram Web 的图片、视频、GIF 和语音提供下载按钮。提供 Chrome / Edge MV3 扩展和 Tampermonkey / Violentmonkey 用户脚本，共用一份源码。项目与 Telegram 无隶属关系。
+为 Telegram Web（包括 `/k/`、`/z/` 客户端）的图片、视频、GIF 和语音提供下载按钮。提供 Chrome / Edge MV3 扩展和 Tampermonkey / Violentmonkey 用户脚本，共用一份源码。项目与 Telegram 无隶属关系。
 
 - 媒体旁的下载按钮，以及左下角用于保存最近捕获媒体的悬浮按钮。
 - 从有效文档描述中读取文件名和大小；普通 Blob 使用自动生成的文件名。
@@ -23,13 +23,13 @@
 
 ## 安装
 
-1. [下载扩展 ZIP](https://github.com/LazyFaiz/tg-media-save/raw/main/dist/tg-media-save-extension.zip) 并解压；也可以直接使用本仓库的 `extension/` 文件夹。
+1. [下载扩展 ZIP](https://github.com/LazyFaiz/tg-media-save/raw/main/dist/tg-media-save-extension.zip) 并解压；也可以直接使用本仓库的 `extension/` 文件夹。扩展需要 Chrome / Chromium 111 或更新版本。
 2. 打开 Chrome 的 `chrome://extensions` 或 Edge 的 `edge://extensions`，开启开发者模式。
 3. 禁用旧版 TG Media Saver 和重复的同类脚本。
 4. 点击“加载已解压的扩展程序”，选择包含 `manifest.json` 的文件夹。
 5. **刷新 Telegram 网页，再重新打开并播放视频**，点击媒体旁的下载按钮。
 
-油猴版本使用 [tg-media-save.user.js](tg-media-save.user.js)，与扩展二选一。当前脚本没有显式 `@updateURL` / `@downloadURL`，升级时请重新安装本仓库版本，不依赖自动更新。
+油猴版本使用 [tg-media-save.user.js](tg-media-save.user.js)，与扩展二选一。Chrome MV3 用户还需在扩展管理页为 Tampermonkey 开启 **Allow user scripts**。当前脚本没有显式 `@updateURL` / `@downloadURL`，升级时请重新安装本仓库版本，不依赖自动更新。
 
 ## 使用
 
@@ -62,7 +62,7 @@
 JSON.stringify(tgSaver.diagnose())
 ```
 
-输出含版本、捕获功能状态、缓存大小及媒体来源类型，不含完整媒体 URL 或消息内容。
+输出含版本、捕获功能状态、缓存大小及媒体来源类型，不含完整媒体 URL 或消息内容。`tgSaver.status()` 和 `tgSaver.debug(true)` 是开发者辅助功能，可能显示来源详情；报告问题时优先提供 `diagnose()` 输出。
 
 | 字段 | 含义 |
 |---|---|

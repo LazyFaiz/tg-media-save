@@ -8,7 +8,7 @@ Based on [eiler2005/tg-media-saver](https://github.com/eiler2005/tg-media-saver)
 
 ## Features
 
-Adds download buttons for photos, videos, GIFs and voice messages in Telegram Web. Available as a Chrome / Edge MV3 extension and a Tampermonkey / Violentmonkey userscript, built from the same source. Not affiliated with Telegram.
+Adds download buttons for photos, videos, GIFs and voice messages in Telegram Web, including its `/k/` and `/z/` clients. Available as a Chrome / Edge MV3 extension and a Tampermonkey / Violentmonkey userscript, built from the same source. Not affiliated with Telegram.
 
 - Inline media download buttons and a floating button at the bottom left for the last captured media.
 - File names and sizes from valid document descriptors; ordinary Blobs use generated file names.
@@ -23,13 +23,13 @@ On 2026-09-21, the user confirmed successful downloading of the previously faili
 
 ## Installation
 
-1. [Download the extension ZIP](https://github.com/LazyFaiz/tg-media-save/raw/main/dist/tg-media-save-extension.zip) and extract it, or use the repository's `extension/` folder directly.
+1. [Download the extension ZIP](https://github.com/LazyFaiz/tg-media-save/raw/main/dist/tg-media-save-extension.zip) and extract it, or use the repository's `extension/` folder directly. The extension requires Chrome / Chromium 111 or newer.
 2. Open `chrome://extensions` in Chrome or `edge://extensions` in Edge and enable Developer mode.
 3. Disable the old TG Media Saver and duplicate scripts that provide the same function.
 4. Choose **Load unpacked** and select the folder containing `manifest.json`.
 5. **Refresh Telegram, then reopen and play the video**, and click its download button.
 
-For the userscript, use [tg-media-save.user.js](tg-media-save.user.js). Use either the extension or the userscript, not both. The script has no explicit `@updateURL` / `@downloadURL`; reinstall the version from this repository when upgrading rather than relying on automatic updates.
+For the userscript, use [tg-media-save.user.js](tg-media-save.user.js). Use either the extension or the userscript, not both. On Chrome MV3, enable **Allow user scripts** for Tampermonkey in the extension manager. The script has no explicit `@updateURL` / `@downloadURL`; reinstall the version from this repository when upgrading rather than relying on automatic updates.
 
 ## Usage
 
@@ -62,7 +62,7 @@ First confirm you refreshed the page and reopened the video. If downloading stil
 JSON.stringify(tgSaver.diagnose())
 ```
 
-The output includes the version, capture status, cache size and media source categories, without complete media URLs or message contents.
+The output includes the version, capture status, cache size and media source categories, without complete media URLs or message contents. `tgSaver.status()` and `tgSaver.debug(true)` are developer helpers that may expose source details; share `diagnose()` output when reporting an issue.
 
 | Field | Meaning |
 |---|---|
